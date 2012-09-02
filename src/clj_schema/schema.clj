@@ -346,6 +346,7 @@
         (subpaths xtra-path))]
            (extraneous-path-error (into parent-path xtra-path))))))
 
+;; TODO: ALEX - September 1, 2012 -- extract third namespace clj-schema.validation for all validating code
 (defn validation-errors
   "Returns a set of all the validation errors found when comparing a given
    map m, against the supplied schema.
