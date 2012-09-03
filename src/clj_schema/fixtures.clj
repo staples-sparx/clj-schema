@@ -19,13 +19,10 @@
   "like defn, except the result of evaluating the function is checked
    for validity aginst the supplied schema. Supports multi-arity definitions."
   [name schema & lists-of-args+bodies]
-  (if (vector? (first lists-of-args+bodies))
-    ;; single arity def -- get the fn for the macro so I can call it again to make the
-    ;;                     single-arity effectively a call to the multi-arity version
-    (#'def-fixture-factory nil nil name schema lists-of-args+bodies)
-
-    ;; multi-arity defn
-    `(defn ~name
-       ~@(for [[args & body-that-creates-fixture] lists-of-args+bodies]
-           `(~args
-              (fixture ~schema (do ~@body-that-creates-fixture)))))))
+  (let [multi-arity? (not (vector? (first lists-of-args+bodies)))]
+    (if multi-arity?
+      `(defn ~name
+         ~@(for [[args & body-that-creates-fixture] lists-of-args+bodies]
+             `(~args
+                (fixture ~schema (do ~@body-that-creates-fixture)))))
+      `(def-fixture-factory ~name ~schema ~lists-of-args+bodies)))) ;; turns single-arity into multi-arity
