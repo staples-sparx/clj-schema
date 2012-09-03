@@ -1,3 +1,15 @@
+(def common-deps '[]) ;; if any ever exist
+
 (defproject clj-schema "0.2.0-SNAPSHOT"
   :description "Map schema definitions and validation library."
-  :dependencies [[org.clojure/clojure "1.2.0"]])
+  :dependencies ~(cons '[org.clojure/clojure "1.2.0"]
+                         common-deps)
+  :dev-dependencies [[jonase/kibit "0.0.3"]
+                     [jonase/eastwood "0.0.2"]
+                     [lein-multi "1.1.0"]]
+  :multi-deps {"1.2.0" [[org.clojure/clojure "1.2.0"]]
+               "1.2.1" [[org.clojure/clojure "1.2.1"]]
+               "1.3.0" [[org.clojure/clojure "1.3.0"]]
+               "1.4.0" [[org.clojure/clojure "1.4.0"]]
+               "1.5.0" [[org.clojure/clojure "1.5.0-alpha3"]]
+               :all ~common-deps})
