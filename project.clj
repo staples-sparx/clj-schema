@@ -1,6 +1,6 @@
 (def common-deps '[]) ;; if any ever exist
 
-(defproject clj-schema "0.2.0-SNAPSHOT"
+(defproject clj-schema "0.4.0"
   :description "Map schema definitions and validation library."
   :dependencies ~(cons '[org.clojure/clojure "1.2.0"]
                          common-deps)
@@ -12,4 +12,4 @@
                "1.3.0" [[org.clojure/clojure "1.3.0"]]
                "1.4.0" [[org.clojure/clojure "1.4.0"]]
                "1.5.0" [[org.clojure/clojure "1.5.0-alpha3"]]
-               :all ~common-deps})
+                :all ~common-deps})
