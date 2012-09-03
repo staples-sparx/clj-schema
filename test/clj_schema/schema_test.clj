@@ -4,19 +4,19 @@
   (:import clojure.lang.Keyword))
 
 
-(def-validation-schema name-schema   [[:name :first] string?])
-(def-validation-schema height-schema [[:height] integer?])
-(def-validation-schema count-schema [[:count] Integer])
-(def-validation-schema product-schema [[:quantity] Integer
-                                       [:price]    Integer])
-(def-loose-validation-schema loose-height-schema [[:height] integer?])
+(def-validation-schema name-schema   [[:name :first] String])
+(def-validation-schema height-schema [[:height] Number])
+(def-validation-schema count-schema [[:count] Number])
+(def-validation-schema product-schema [[:quantity] Number
+                                       [:price]    Number])
+(def-loose-validation-schema loose-height-schema [[:height] Number])
 (def-validation-schema person-schema
   name-schema
   height-schema)
 
 (def-loose-validation-schema loose-person-schema
-  [[:name :first] string?
-   [:height] integer?])
+  [[:name :first] String
+   [:height] Number])
 
 (def-validation-schema family-schema
   [[:mom] person-schema
@@ -43,28 +43,28 @@
 
     ;;
 
-    ;;;; One predicate per path
+    ;;;; One validator per path
 
     [[:a] number?]
     {:a 1}
       #{}
 
-    [[:b] number?]
+    [[:b] Integer]
     {}
       #{"Map did not contain expected path [:b]."}
 
-    [[:bb] number?]
+    [[:bb] Integer]
     {:bb "bb"}
-      #{"Map value \"bb\", at path [:bb], did not match predicate 'number?'."}
+    #{"Map value \"bb\" at path [:bb] expected class java.lang.Integer, but was java.lang.String"}
 
-    [[:b :c] number?]
+    [[:b :c] Integer]
     {:b "a"}
       #{"Path [:b] was not specified in the schema."
       "Map did not contain expected path [:b :c]."}
 
-    [[:b :c] number?]
-    {:b {:c "a"}}
-      #{"Map value \"a\", at path [:b :c], did not match predicate 'number?'."}
+    [[:b :c] Integer]
+    {:b {:c :a}}
+      #{"Map value :a at path [:b :c] expected class java.lang.Integer, but was clojure.lang.Keyword"}
 
     ;;
 
@@ -74,24 +74,24 @@
     {:a 1}
       #{}
 
-    [[:b] [number? pos?]]
+    [[:b] [String Keyword]]
     {}
       #{"Map did not contain expected path [:b]."}
 
-    [[:b] [number? pos?]]
-    {:b "a"}
-      #{"Map value \"a\", at path [:b], did not match predicate 'number?'."
-      "Map value \"a\", at path [:b], did not match predicate 'pos?'."}
+    [[:b] [String Keyword]]
+    {:b 1.1}
+      #{"Map value 1.1 at path [:b] expected class java.lang.String, but was java.lang.Double"
+      "Map value 1.1 at path [:b] expected class clojure.lang.Keyword, but was java.lang.Double"}
 
     [[:b :c] [number? pos?]]
     {:b "a"}
       #{"Path [:b] was not specified in the schema."
       "Map did not contain expected path [:b :c]."}
 
-    [[:b :c] [number? pos?]]
-    {:b {:c "a"}}
-      #{"Map value \"a\", at path [:b :c], did not match predicate 'number?'."
-      "Map value \"a\", at path [:b :c], did not match predicate 'pos?'."}
+    [[:b :c] [String Keyword]]
+    {:b {:c 1.1}}
+      #{"Map value 1.1 at path [:b :c] expected class java.lang.String, but was java.lang.Double"
+      "Map value 1.1 at path [:b :c] expected class clojure.lang.Keyword, but was java.lang.Double"}
 
     ;;
 
@@ -110,12 +110,12 @@
     ;;;; when using 'sequence-of' validator is applied against each element in the sequence at that key
     [[:a] (sequence-of person-schema)]
     {:a [{:name {:first "Roberto"} :height 11} {:name {:first "Roberto"} :height "11"}]}
-      #{"Map value \"11\", at path [:a :height], did not match predicate 'integer?'."}
+    #{"Map value \"11\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
 
     ;;;; if the schema path isn't present, and using a schema validator the seq, we get a "not present" error
     [[:a] (sequence-of person-schema)]
     {:not-a [{:name {:first "Roberto"} :height 34} {:name {:first "Roberto"} :height "34"}]}
-      #{"Map did not contain expected path [:a]."
+    #{"Map did not contain expected path [:a]."
       "Path [:not-a] was not specified in the schema."}
 
     ;;;; if an optional schema path isn't present - no error messages
@@ -126,43 +126,43 @@
     ;;;; `optional-path` has no effect if the schema path is present
     [(optional-path [:a]) (sequence-of person-schema)]
     {:a [{:name {:first "Roberto"} :height 70} {:name {:first "Roberto"} :height "70"}]}
-      #{"Map value \"70\", at path [:a :height], did not match predicate 'integer?'."}
+      #{"Map value \"70\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
 
     ;;;; you can mix types of validators: preds with schemas
     [[:a] (sequence-of [first-name-bob? person-schema])]
-    {:a [{:name {:first "Roberto"} :height 44} {:name {:first "Chris"} :height "44"}]}
-      #{"Map value \"44\", at path [:a :height], did not match predicate 'integer?'."
-      "Map value {:name {:first \"Roberto\"}, :height 44}, at path [:a], did not match predicate 'furtive.schemas.validation-schema-spec/first-name-bob?'."
-      "Map value {:name {:first \"Chris\"}, :height \"44\"}, at path [:a], did not match predicate 'furtive.schemas.validation-schema-spec/first-name-bob?'."}
+    {:a [{:name {:first "Roberto"} :height 44} {:name {:first "Chris"} :height "4a"}]}
+    #{"Map value \"4a\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"
+      "Map value {:name {:first \"Roberto\"}, :height 44}, at path [:a], did not match predicate 'clj-schema.schema-test/first-name-bob?'."
+      "Map value {:name {:first \"Chris\"}, :height \"4a\"}, at path [:a], did not match predicate 'clj-schema.schema-test/first-name-bob?'."}
 
     ;;;; ...  multiple strict schemas together makes little sense - one schema will think extra keys were not specified by it, though they were by the other schema
     [[:a] (sequence-of [name-schema person-schema])]
     {:a [{:name {:first :Roberto} :height 69} {:name {:first "Roberto"} :height "69"}]}
-      #{"Map value \"69\", at path [:a :height], did not match predicate 'integer?'."
-      "Map value :Roberto, at path [:a :name :first], did not match predicate 'string?'."
+    #{"Map value \"69\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"
+      "Map value :Roberto at path [:a :name :first] expected class java.lang.String, but was clojure.lang.Keyword"
       "Path [:a :height] was not specified in the schema."}
 
     ;;;; validator on right of schema, can be made an or, and can work with both preds and schemas mixed
     [[:a] [:or nil? person-schema]]
     {:a nil}
-      #{}
+    #{}
 
     ;;;; you can have just one thing in the ':or' - but please don't it is weird
     [[:a] (sequence-of [:or person-schema])]
     {:a [{:name {:first "Roberto"} :height "76"}]}
-      #{"Map value \"76\", at path [:a :height], did not match predicate 'integer?'."}
+    #{"Map value \"76\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
 
     ;;;; when both :or options fail - see errors for both 'nil?' and 'person-schema'
     [[:a] [:or nil? person-schema]]
     {:a {:name {:first "Roberto"} :height "66"}}
-      #{"Map value {:name {:first \"Roberto\"}, :height \"66\"}, at path [:a], did not match predicate 'nil?'."
-      "Map value \"66\", at path [:a :height], did not match predicate 'integer?'."}
+    #{"Map value {:name {:first \"Roberto\"}, :height \"66\"}, at path [:a], did not match predicate 'nil?'."
+      "Map value \"66\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
 
     ;;;; or collects all failures in the sequence being checked
     [[:a] (sequence-of [:or nil? person-schema])]
     {:a [{:name {:first "Roberto"} :height "88"} {:name {:first "Roberto"} :height 88}]}
-      #{"Map value {:name {:first \"Roberto\"}, :height \"88\"}, at path [:a], did not match predicate 'nil?'."
-      "Map value \"88\", at path [:a :height], did not match predicate 'integer?'."}
+    #{"Map value \"88\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"
+      "Map value {:name {:first \"Roberto\"}, :height \"88\"}, at path [:a], did not match predicate 'nil?'."}
 
     ;;;; nested schemas - no errors
     [[:a :family] family-schema]
@@ -178,8 +178,9 @@
                         :height 42}
                   :dad {:name {:first "Stanley"}
                         :height :53}}}}
-     #{"Map value :53, at path [:a :family :dad :height], did not match predicate 'integer?'."
-       "Map value :Theresa, at path [:a :family :mom :name :first], did not match predicate 'string?'."}
+     #{"Map value :53 at path [:a :family :dad :height] expected class java.lang.Number, but was clojure.lang.Keyword"
+       "Map value :Theresa at path [:a :family :mom :name :first] expected class java.lang.String, but was clojure.lang.Keyword"
+       }
 
      ;;;; strict schemas fail if there are more keys than specified
      [[:a :family] family-schema]
@@ -252,8 +253,8 @@
      {:a [1 2 3]}
      #{"Map value [1 2 3], at path [:a], was sequential but not tagged with 'sequence-of'."}
 
-     ;;;; using 'sequence-of' with an 'integer?' predicate - means there is a seq of integers
-     [[:a] (sequence-of integer?)]
+     ;;;; using 'sequence-of' with an 'Number' predicate - means there is a seq of numbers
+     [[:a] (sequence-of Number)]
      {:a 1}
        #{"Map value 1, at path [:a], was a single value but was tagged with 'sequence-of'."}
 
@@ -344,7 +345,7 @@
        #{}
 
      ;; doesn't confuse paths with string keys as wildcard paths - regression test Jun 15, 2012
-     [["Sneetch" :unit-price-cents] string?]
+     [["Sneetch" :unit-price-cents] String]
      {"Sneetch" {:unit-price-cents "a"}}
      #{}
 
@@ -487,9 +488,9 @@
 
      ;; TODO ALex July 30, 2012 -- move into internal ns all about wildcard paths
      (deftest test-wildcard-path->concrete-paths
-       (are [m wildcard-path concrete-paths] (= concrete-paths
-                                               (wildcard-path->concrete-paths m
-                                                 wildcard-path))
+       (are [m wildcard-path concrete-paths] (= (set concrete-paths)
+                                               (set (wildcard-path->concrete-paths m
+                                                 wildcard-path)))
          ;; base cases
          {}
          []

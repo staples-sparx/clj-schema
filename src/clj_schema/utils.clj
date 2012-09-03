@@ -32,26 +32,9 @@
       (apply f args)
       (catch Throwable e false))))
 
-(def fns-w-out-name-in-meta->name
-  {string? "string?"
-   first "first"
-   second "second"
-   map?   "map?"})
-
-(defn verbose-fn-name
-  "string?         ;=> 'string?'
-   my-fn           ;=> 'my.namespace/my-fn'
-   #(integer? %)   ;=> '(fn* [p1__150085#] (integer? p1__150085#))'
-   NOTE: won't work past Clojure 1.2"
-  [f]
-  (when f
-    (if-let [special-case-fn (fns-w-out-name-in-meta->name f)]
-      special-case-fn
-      (let [{:keys [^clojure.lang.Namespace ns name]} (meta f)]
-        (if-not (and ns name)
-          (str f)
-          (let [ns-name (str/trim (.getName ns))
-                fn-name (str/trim name)]
-            (if (= "clojure.core" ns-name)
-              fn-name
-              (str ns-name "/" fn-name))))))))
+(defn pretty-fn-str [f]
+  (-> (str f)
+      (str/replace #"(^clojure.core\$)|(_?@[0-9a-z]+$)" "")
+      (str/replace #"\$" "/")
+      (str/replace #"_QMARK" "?")
+      (str/replace #"_" "-")))

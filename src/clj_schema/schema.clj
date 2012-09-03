@@ -184,7 +184,7 @@
 
 (defn- predicate-fail-error [val-at-path full-path pred]
   (format "Map value %s, at path %s, did not match predicate '%s'."
-    (pr-str val-at-path) full-path (verbose-fn-name pred)))
+    (pr-str val-at-path) full-path (pretty-fn-str pred)))
 
 (defn- instance-of-fail-error [val-at-path full-path expected-class]
   (format "Map value %s at path %s expected class %s, but was %s"
