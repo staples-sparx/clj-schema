@@ -1,10 +1,11 @@
 (ns clj-schema.fixtures-test
   (:use clj-schema.fixtures
         clojure.test)
-  (:require [clj-schema.schema :as schema]))
+  (:require [clj-schema.schema :as schema]
+            [clj-schema.validators :as v]))
 
 (schema/def-validation-schema person-schema
-  [[:name] String
+  [[:name] v/NonEmptyString
    [:height] Number])
 
 (def fixture-1 (fixture person-schema {:name "Roberto"
