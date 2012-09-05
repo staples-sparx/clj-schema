@@ -20,10 +20,10 @@
                                            [:cat :color] String])
       ... ]
 
-      `def-validation-schema` creates a strict schema, which expects only the paths it
+      `defschema` creates a strict schema, which expects only the paths it
       describes to be present on the given map.
 
-      `def-loose-validation-schema` creates a loose schema, which expects its paths to
+      `def-loose-schema` creates a loose schema, which expects its paths to
       be present but does not complain about extra paths."}
   clj-schema.schema
   (:use clj-schema.utils)
@@ -35,51 +35,51 @@
 (defn- schema-path-set [schema]
   (set (take-nth 2 schema)))
 
-(defn loose-validation-schema
+(defn loose-schema
   "From a seq of vectors, creates a schema that can be used within other schemas.
    Checks for the presence of all paths; other paths may also exist."
   [& vs]
   {:pre [(even? (count (apply concat vs)))
          (every? vector? (schema-path-set (apply concat vs)))]}
   (let [schema-vector (vec (apply concat vs))]
-    (vary-meta schema-vector assoc :validation/schema true)))
+    (vary-meta schema-vector assoc ::schema true)))
 
-(defn strict-validation-schema
+(defn strict-schema
   "From a seq of vectors, creates a schema that can be used within other schemas.
    Any paths found in addition to the ones specified are considered a violation."
   [& vs]
   {:pre [(even? (count (apply concat vs)))
          (every? vector? (schema-path-set (apply concat vs)))]}
   (let [schema-vector (vec (apply concat vs))]
-    (vary-meta schema-vector merge {:validation/schema true
-                                    :validation/strict-schema true})))
+    (vary-meta schema-vector merge {::schema true
+                                    ::strict-schema true})))
 
-(defmacro def-loose-validation-schema
+(defmacro def-loose-schema
   "Creates a named var for a loose schema that can be used within other schemas."
   [name & schema-vectors]
-  `(-> (def ~name (loose-validation-schema ~@schema-vectors))
-     (alter-meta! assoc :validation/schema true)))
+  `(-> (def ~name (loose-schema ~@schema-vectors))
+     (alter-meta! assoc ::schema true)))
 
-(defmacro def-validation-schema
+(defmacro defschema
   "Creates a named var for a strict schema that can be used within other schemas."
   [name & schema-vectors]
-  `(-> (def ~name (strict-validation-schema ~@schema-vectors))
-     (alter-meta! merge {:validation/schema true
-                         :validation/strict-schema true})))
+  `(-> (def ~name (strict-schema ~@schema-vectors))
+     (alter-meta! merge {::schema true
+                         ::strict-schema true})))
 
 
 ;; Questions asked of Schemas
 
 (defn schema? [x]
-  (boolean (:validation/schema (meta x))))
+  (boolean (::schema (meta x))))
 
 (defn strict-schema? [x]
   (boolean (and (schema? x)
-             (:validation/strict-schema (meta x)))))
+             (::strict-schema (meta x)))))
 
 (defn loose-schema? [x]
   (boolean (and (schema? x)
-             (not (:validation/strict-schema (meta x))))))
+             (not (::strict-schema (meta x))))))
 
 (defn schema-rows [schema]
   (partition 2 schema))
@@ -150,10 +150,10 @@
    Optional paths may or may not be present on the validated map, but
    if they are present they must be valid against the given validator."
   [schema-path]
-  (vary-meta schema-path assoc :validation/optional-path true))
+  (vary-meta schema-path assoc ::optional-path true))
 
 (defn optional-path? [schema-path]
-  (boolean (:validation/optional-path (meta schema-path))))
+  (boolean (::optional-path (meta schema-path))))
 
 (defn wildcard-path? [schema-path]
   (some wildcard-validator? schema-path))

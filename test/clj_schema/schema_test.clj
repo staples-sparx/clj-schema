@@ -4,25 +4,25 @@
   (:import clojure.lang.Keyword))
 
 
-(def-validation-schema name-schema   [[:name :first] String])
-(def-validation-schema height-schema [[:height] Number])
-(def-validation-schema count-schema [[:count] Number])
-(def-validation-schema product-schema [[:quantity] Number
+(defschema name-schema   [[:name :first] String])
+(defschema height-schema [[:height] Number])
+(defschema count-schema [[:count] Number])
+(defschema product-schema [[:quantity] Number
                                        [:price]    Number])
-(def-loose-validation-schema loose-height-schema [[:height] Number])
-(def-validation-schema person-schema
+(def-loose-schema loose-height-schema [[:height] Number])
+(defschema person-schema
   name-schema
   height-schema)
 
-(def-loose-validation-schema loose-person-schema
+(def-loose-schema loose-person-schema
   [[:name :first] String
    [:height] Number])
 
-(def-validation-schema family-schema
+(defschema family-schema
   [[:mom] person-schema
    [:dad] person-schema])
 
-(def-validation-schema mom-strict-dad-loose-family-schema
+(defschema mom-strict-dad-loose-family-schema
   [[:mom] person-schema
    [:dad] loose-person-schema])
 
@@ -274,7 +274,7 @@
      #{}
 
      ;;;; nested loose schemas don't count toward strict schema's keys
-     (strict-validation-schema
+     (strict-schema
        [[:a] loose-height-schema])
      {:a {:height 72 :extra-key-doesnt-cuase-error "foo"}
       :b "oops"}
@@ -308,7 +308,7 @@
      #{"Map value :b at path [:a :x \"b\"] expected class java.lang.String, but was clojure.lang.Keyword"}
 
      ;; if a path exists that doesn't match the wildcard, it is considered an extraneous path
-     [[:a] (strict-validation-schema [[(wild Keyword)] String])]
+     [[:a] (strict-schema [[(wild Keyword)] String])]
      {:a {"b" "foo" "c" "bar"}}
        #{"Path [:a \"c\"] was not specified in the schema."
        "Path [:a \"b\"] was not specified in the schema."}
@@ -335,7 +335,7 @@
        #{}
 
      ;; extra paths on wild card paths are ok if the schema is loose
-     (loose-validation-schema [[:a (wild string?)] String])
+     (loose-schema [[:a (wild string?)] String])
      {:a {999 :boom}}
      #{}
 
@@ -350,7 +350,7 @@
      #{}
 
      ;; won't confuse them in nested paths either
-     [["Sneetch" :unit-price-cents] (strict-validation-schema [[:a] string?])]
+     [["Sneetch" :unit-price-cents] (strict-schema [[:a] string?])]
      {"Sneetch" {:unit-price-cents {:a "a"}}}
        #{}
 
@@ -378,12 +378,12 @@
        #{"Path [:a] was not specified in the schema."}
 
      ;; can't have empty maps at wilcard paths, they don't count
-     [[:a :b] (strict-validation-schema [[(wild String)] Number])]
+     [[:a :b] (strict-schema [[(wild String)] Number])]
      {:a {}}
      #{"Map did not contain expected path [:a :b]."}
 
      ;; ... <continued>
-     [[:a :b] (strict-validation-schema [[:banana-count] Number
+     [[:a :b] (strict-schema [[:banana-count] Number
                                          [(wild String)] Number])]
      {:a {}}
        #{"Map did not contain expected path [:a :b]."}
@@ -439,18 +439,18 @@
          nil (comp not schema?)
          nil (comp not loose-schema?)
          nil (comp not strict-schema?)
-         (loose-validation-schema [[:a] string?]) schema?
-         (loose-validation-schema [[:a] string?]) loose-schema?
-         (loose-validation-schema [[:a] string?]) (comp not strict-schema?)
+         (loose-schema [[:a] string?]) schema?
+         (loose-schema [[:a] string?]) loose-schema?
+         (loose-schema [[:a] string?]) (comp not strict-schema?)
          loose-person-schema schema?
          loose-person-schema loose-schema?
          loose-person-schema (comp not strict-schema?)
          #'loose-person-schema schema?
          #'loose-person-schema loose-schema?
          #'loose-person-schema (comp not strict-schema?)
-         (strict-validation-schema [[:a] string?]) schema?
-         (strict-validation-schema [[:a] string?]) strict-schema?
-         (strict-validation-schema [[:a] string?]) (comp not loose-schema?)
+         (strict-schema [[:a] string?]) schema?
+         (strict-schema [[:a] string?]) strict-schema?
+         (strict-schema [[:a] string?]) (comp not loose-schema?)
          family-schema schema?
          family-schema strict-schema?
          family-schema (comp not loose-schema?)
@@ -459,25 +459,25 @@
          #'family-schema (comp not loose-schema?)))
 
      (deftest test-subtract-paths
-       (doseq [[schema-identifier schema-maker] [[loose-schema? loose-validation-schema]
-                                                 [strict-schema? strict-validation-schema]]]
+       (doseq [[schema-identifier schema-maker] [[loose-schema? loose-schema]
+                                                 [strict-schema? strict-schema]]]
          (is (= (subtract-paths (schema-maker [[:a] string? [:b] string? [:c] string?]) [:b] [:c])
                (schema-maker [[:a] string?])))
          (is (schema-identifier (subtract-paths (schema-maker [[:a] string? [:b] string? [:c] string?]) [:b] [:c])))))
 
      (deftest test-select-schema-keys
-       (doseq [[schema-identifier schema-maker] [[loose-schema? loose-validation-schema]
-                                                 [strict-schema? strict-validation-schema]]]
+       (doseq [[schema-identifier schema-maker] [[loose-schema? loose-schema]
+                                                 [strict-schema? strict-schema]]]
          (is (= (select-schema-keys (schema-maker [[:a :x] string? [:b :y] string? [:c :z] string?]) :b :c)
                (schema-maker [[:b :y] string? [:c :z] string?])))
          (is (schema-identifier (select-schema-keys (schema-maker [[:a :x] string? [:b :y] string? [:c :z] string?]) :b :c)))))
 
      (deftest test-schema-construction-preconditions
        (are [schema-maker args] (thrown? AssertionError (schema-maker args))
-         loose-validation-schema [[:a] string? [:b string?]]
-         strict-validation-schema [[:a] string? [:b string?]]
-         loose-validation-schema ['(:a) string?]
-         strict-validation-schema ['(:a) string?]))
+         loose-schema [[:a] string? [:b string?]]
+         strict-schema [[:a] string? [:b string?]]
+         loose-schema ['(:a) string?]
+         strict-schema ['(:a) string?]))
 
      (deftest test-num-schema-paths
        (are [schema n] (= (num-schema-paths schema) n)
