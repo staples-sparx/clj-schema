@@ -3,14 +3,19 @@
   (:require [clj-schema.schema :as schema]
             [clojure.pprint :as pprint]))
 
-(defn- assert-no-validation-errors [fixture-map error-msgs]
-  (when-not (empty? error-msgs)
-    (pprint/pprint fixture-map)
-    (throw (AssertionError. (str "Schema validation failed: " error-msgs)))))
+
+(defn validate-arg [arg schema success-handler-fn error-handler-fn]
+  (if-let [errors (seq (schema/validation-errors schema arg))]
+    (error-handler-fn arg errors)
+    (success-handler-fn arg)))
 
 (defn fixture [schema fixture-map]
-  (assert-no-validation-errors fixture-map (schema/validation-errors schema fixture-map))
-  fixture-map)
+  (validate-arg fixture-map
+                schema
+                identity
+                (fn [fx-map error-msgs]
+                  (pprint/pprint fx-map)
+                  (throw (AssertionError. (str "Schema validation failed: " error-msgs))))))
 
 (defmacro def-fixture [name schema fixture-map]
   `(def ~name (fixture ~schema ~fixture-map)))
