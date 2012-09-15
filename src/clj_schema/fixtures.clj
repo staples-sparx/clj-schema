@@ -4,18 +4,13 @@
             [clojure.pprint :as pprint]))
 
 
-(defn validate-arg [arg schema success-handler-fn error-handler-fn]
-  (if-let [errors (seq (validation/validation-errors schema arg))]
-    (error-handler-fn arg errors)
-    (success-handler-fn arg)))
-
 (defn fixture [schema fixture-map]
-  (validate-arg fixture-map
-                schema
-                identity
-                (fn [fx-map error-msgs]
-                  (pprint/pprint fx-map)
-                  (throw (AssertionError. (str "Schema validation failed: " error-msgs))))))
+  (validation/validate-arg fixture-map
+                           schema
+                           identity
+                           (fn [fx-map error-msgs]
+                             (pprint/pprint fx-map)
+                             (throw (AssertionError. (str "Schema validation failed: " error-msgs))))))
 
 (defmacro def-fixture [name schema fixture-map]
   `(def ~name (fixture ~schema ~fixture-map)))

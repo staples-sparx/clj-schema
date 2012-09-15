@@ -209,3 +209,8 @@
 
 (defn valid? [schema m]
   (empty? (validation-errors schema m)))
+
+(defn validate-arg [arg schema success-handler-fn error-handler-fn]
+  (if-let [errors (seq (validation-errors schema arg))]
+    (error-handler-fn arg errors)
+    (success-handler-fn arg)))
