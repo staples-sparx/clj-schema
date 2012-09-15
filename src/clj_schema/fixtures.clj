@@ -1,11 +1,11 @@
 (ns ^{:doc "Ways to create fixture test data that must match a given schema"}
   clj-schema.fixtures
-  (:require [clj-schema.schema :as schema]
+  (:require [clj-schema.validation :as validation]
             [clojure.pprint :as pprint]))
 
 
 (defn validate-arg [arg schema success-handler-fn error-handler-fn]
-  (if-let [errors (seq (schema/validation-errors schema arg))]
+  (if-let [errors (seq (validation/validation-errors schema arg))]
     (error-handler-fn arg errors)
     (success-handler-fn arg)))
 
