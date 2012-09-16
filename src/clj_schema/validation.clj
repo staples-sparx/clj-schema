@@ -237,10 +237,16 @@
          #{(non-map-error error-reporter (state-map-for-reporter parent-path))}
          (set/union (path-content-errors) (extraneous-paths-errors))))))
 
-(defn valid? [schema m]
-  (empty? (validation-errors schema m)))
+(defn valid?
+  ([schema m]
+    (valid? (StringErrorReporter.) schema m))
+  ([error-reporter schema m]
+    (empty? (validation-errors error-reporter schema m))))
 
-(defn validate-arg [arg schema success-handler-fn error-handler-fn]
-  (if-let [errors (seq (validation-errors schema arg))]
-    (error-handler-fn arg errors)
-    (success-handler-fn arg)))
+(defn validate-arg
+  ([error-reporter arg schema success-handler-fn error-handler-fn]
+    (if-let [errors (seq (validation-errors error-reporter schema arg))]
+      (error-handler-fn arg errors)
+      (success-handler-fn arg)))
+  ([arg schema success-handler-fn error-handler-fn]
+    (validate-arg (StringErrorReporter.) arg schema success-handler-fn error-handler-fn)))
