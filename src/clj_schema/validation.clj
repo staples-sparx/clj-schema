@@ -212,7 +212,9 @@
     #{}
     (set (for [xtra-path (extraneous-paths)
                :when (not-any? matches-any-wildcard-path? (u/subpaths xtra-path))]
-           (extraneous-path-error *error-reporter* (state-map-for-reporter (into *parent-path* xtra-path)) (into *parent-path* xtra-path))))))
+           (extraneous-path-error *error-reporter*
+                                  (state-map-for-reporter *parent-path*)
+                                  (into *parent-path* xtra-path))))))
 
 (defn validation-errors
   "Returns a set of all the validation errors found when comparing a given
