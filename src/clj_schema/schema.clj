@@ -26,7 +26,7 @@
       `def-loose-schema` creates a loose schema, which expects its paths to
       be present but does not complain about extra paths."}
   clj-schema.schema
-  (:require [clj-schema.utils :as u]))
+  (:require [clj-schema.internal.utils :as u]))
 
 
 ;;;; Validation Schema Creation

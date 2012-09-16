@@ -1,7 +1,7 @@
 (ns clj-schema.validation
   (:require [clojure.set :as set]
             [clj-schema.schema :as s]
-            [clj-schema.utils :as u]))
+            [clj-schema.internal.utils :as u]))
 
 
 (defprotocol ErrorReporter
@@ -204,15 +204,14 @@
             (covered-by-wildcard-path? path-rest wildcard-rest)
             false))))
 
-(defn matches-any-wildcard-path? [all-wild-card-paths path]
-  (some (partial covered-by-wildcard-path? path) all-wild-card-paths))
+(defn matches-any-wildcard-path? [path]
+  (some (partial covered-by-wildcard-path? path) *all-wildcard-paths*))
 
 (defn- extraneous-paths-errors []
   (if (s/loose-schema? *schema-without-wildcard-paths*)
     #{}
     (set (for [xtra-path (extraneous-paths)
-               :when (not-any? (partial matches-any-wildcard-path? *all-wildcard-paths*)
-                               (u/subpaths xtra-path))]
+               :when (not-any? matches-any-wildcard-path? (u/subpaths xtra-path))]
            (extraneous-path-error *error-reporter* (make-state-map (into *parent-path* xtra-path)) (into *parent-path* xtra-path))))))
 
 (defn validation-errors

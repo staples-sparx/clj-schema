@@ -1,7 +1,7 @@
 (ns ^{:doc "Common validators shared within validation schemas."}
   clj-schema.validators
   (:require [clj-schema.schema :as vs]
-            [clj-schema.utils :as u])
+            [clj-schema.internal.utils :as u])
   (:import clojure.lang.Keyword))
 
 

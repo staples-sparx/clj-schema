@@ -1,4 +1,4 @@
-(ns clj-schema.utils
+(ns clj-schema.internal.utils
   (:require [clojure.string :as str]))
 
 
