@@ -47,14 +47,15 @@
     (format "Map value %s at path %s expected class %s, but was %s"
             (pr-str val-at-path) full-path (pr-str expected-class) (pr-str (class val-at-path)))))
 
-(def ^:private ^:dynamic *error-reporter* nil)
-(def ^:private ^:dynamic *map-under-validation* nil)
-(def ^:private ^:dynamic *schema* nil)
-(def ^:private ^:dynamic *parent-path* nil)
-(def ^:private ^:dynamic *all-wildcard-paths* nil)
-(def ^:private ^:dynamic *schema-without-wildcard-paths* nil)
+;; used to hold state of one `validation-errors` calculation
+(def ^{:private true :dynamic true} *error-reporter* nil)
+(def ^{:private true :dynamic true} *map-under-validation* nil)
+(def ^{:private true :dynamic true} *schema* nil)
+(def ^{:private true :dynamic true} *parent-path* nil)
+(def ^{:private true :dynamic true} *all-wildcard-paths* nil)
+(def ^{:private true :dynamic true} *schema-without-wildcard-paths* nil)
 
-(defn- make-state-map [full-path]
+(defn- state-map-for-reporter [full-path]
   {:map-under-validation *map-under-validation*
    :schema *schema*
    :parent-path *parent-path*
@@ -72,29 +73,29 @@
 
 (declare validation-errors)
 
-(defmulti ^:private errors-for-path-content #(validator-type %3))
+(defmulti ^{:private true} errors-for-path-content #(validator-type %3))
 
 (defmethod errors-for-path-content :schema [full-path val-at-path schema]
   (if (sequential? val-at-path)
-    [(single-val-error *error-reporter* (make-state-map full-path) val-at-path)]
+    [(single-val-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
     (validation-errors *error-reporter* full-path schema val-at-path)))
 
 (defmethod errors-for-path-content :class [full-path val-at-path expected-class]
   (cond (sequential? val-at-path)
-        [(single-val-error *error-reporter* (make-state-map full-path) val-at-path)]
+        [(single-val-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
         
         (not (instance? expected-class val-at-path))
-        [(instance-of-fail-error *error-reporter* (make-state-map full-path) val-at-path expected-class)]
+        [(instance-of-fail-error *error-reporter* (state-map-for-reporter full-path) val-at-path expected-class)]
         
         :else
         []))
 
 (defmethod errors-for-path-content :predicate [full-path val-at-path pred]
   (cond (sequential? val-at-path)
-        [(single-val-error *error-reporter* (make-state-map full-path) val-at-path)]
+        [(single-val-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
         
         (not ((u/fn->fn-thats-false-if-throws pred) val-at-path))  ;; keeps us safe from ClassCastExceptions, etc
-        [(predicate-fail-error *error-reporter* (make-state-map full-path) val-at-path pred)]
+        [(predicate-fail-error *error-reporter* (state-map-for-reporter full-path) val-at-path pred)]
         
         :else
         []))
@@ -116,7 +117,7 @@
 (defmethod errors-for-path-content :sequence [full-path values-at-path validator]
   (if (or (nil? values-at-path) (sequential? values-at-path))
     (mapcat #(errors-for-path-content full-path % (:single-item-validator validator)) values-at-path)
-    [(sequential-val-error *error-reporter* (make-state-map full-path) values-at-path)]))
+    [(sequential-val-error *error-reporter* (state-map-for-reporter full-path) values-at-path)]))
 
 (defn- matches-validator? [validator x]
   (empty? (errors-for-path-content [] x validator)))
@@ -144,7 +145,7 @@
           []
           
           (not contains-path?)
-          [(missing-path-error *error-reporter* (make-state-map full-path) full-path)]
+          [(missing-path-error *error-reporter* (state-map-for-reporter full-path) full-path)]
           
           :else
           (errors-for-path-content full-path val-at-path validator))))
@@ -189,20 +190,19 @@
     (set/difference shortened schema-paths)))
 
 (defn- covered-by-wildcard-path? [[path-first & path-rest :as path-to-check] [wildcard-first & wildcard-rest :as wildcard-path]]
-  (if-not (= (count path-to-check) (count wildcard-path)) ;; optimization
-    false
-    (cond (empty? path-to-check)
-          true
-          
-          (s/wildcard-validator? wildcard-first)
-          (if (matches-validator? (:validator wildcard-first) path-first)
-            (covered-by-wildcard-path? path-rest wildcard-rest)
-            false)
-          
-          :else
-          (if (= wildcard-first path-first)
-            (covered-by-wildcard-path? path-rest wildcard-rest)
-            false))))
+  (cond (empty? path-to-check)
+        true
+        
+        (s/wildcard-validator? wildcard-first)
+        (if (matches-validator? (:validator wildcard-first) path-first)
+          (covered-by-wildcard-path? path-rest wildcard-rest)
+          false)
+
+        (= wildcard-first path-first)
+        (covered-by-wildcard-path? path-rest wildcard-rest)
+        
+        :else
+        false))
 
 (defn- matches-any-wildcard-path? [path]
   (some (partial covered-by-wildcard-path? path) *all-wildcard-paths*))
@@ -212,7 +212,7 @@
     #{}
     (set (for [xtra-path (extraneous-paths)
                :when (not-any? matches-any-wildcard-path? (u/subpaths xtra-path))]
-           (extraneous-path-error *error-reporter* (make-state-map (into *parent-path* xtra-path)) (into *parent-path* xtra-path))))))
+           (extraneous-path-error *error-reporter* (state-map-for-reporter (into *parent-path* xtra-path)) (into *parent-path* xtra-path))))))
 
 (defn validation-errors
   "Returns a set of all the validation errors found when comparing a given
@@ -232,7 +232,7 @@
                *all-wildcard-paths* (s/wildcard-paths schema)
                *schema-without-wildcard-paths* (s/subtract-wildcard-paths schema)]
        (if-not (or (nil? m) (map? m))
-         #{(non-map-error error-reporter (make-state-map parent-path))}
+         #{(non-map-error error-reporter (state-map-for-reporter parent-path))}
          (set/union (path-content-errors) (extraneous-paths-errors))))))
 
 (defn valid? [schema m]
