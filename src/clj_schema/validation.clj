@@ -6,33 +6,44 @@
 
 (declare validation-errors)
 
-;; Types of errors - these abstract away the errors themselves, so
-;;                   we could make these errors be maps instead straightforwardly
-(defn- non-map-error [parent-path m]
-  (format "At path %s, expected a map, got %s instead." parent-path (pr-str m)))
+(defprotocol ErrorReporter
+  "Factory functions to generate each type of validation error."
+  (non-map-error [this parent-path m])
+  (extraneous-path-error [this xtra-path])
+  (missing-path-error [this missing-path])
+  (sequential-val-error [this values-at-path full-path])
+  (single-val-error [this value full-path])
+  (predicate-fail-error [this val-at-path full-path pred])
+  (instance-of-fail-error [this val-at-path full-path expected-class]))
 
-(defn- extraneous-path-error [xtra-path]
-  (format "Path %s was not specified in the schema." xtra-path))
+(deftype StringErrorReporter []
+  ErrorReporter
+  (non-map-error [_ parent-path m]
+    (format "At path %s, expected a map, got %s instead." parent-path (pr-str m)))
+  
+  (extraneous-path-error [_ xtra-path]
+    (format "Path %s was not specified in the schema." xtra-path))
+  
+  (missing-path-error [_ missing-path]
+    (format "Map did not contain expected path %s." missing-path))
+  
+  (sequential-val-error [_ values-at-path full-path]
+    (format "Map value %s, at path %s, was a single value but was tagged with 'sequence-of'."
+            (pr-str values-at-path) full-path))
+  
+  (single-val-error [_ value full-path]
+    (format "Map value %s, at path %s, was sequential but not tagged with 'sequence-of'."
+            (pr-str value) full-path))
+  
+  (predicate-fail-error [_ val-at-path full-path pred]
+    (format "Map value %s, at path %s, did not match predicate '%s'."
+            (pr-str val-at-path) full-path (u/pretty-fn-str pred)))
+  
+  (instance-of-fail-error [_ val-at-path full-path expected-class]
+    (format "Map value %s at path %s expected class %s, but was %s"
+            (pr-str val-at-path) full-path (pr-str expected-class) (pr-str (class val-at-path)))))
 
-(defn- missing-path-error [missing-path]
-  (format "Map did not contain expected path %s." missing-path))
-
-(defn- sequential-val-error [values-at-path full-path]
-  (format "Map value %s, at path %s, was a single value but was tagged with 'sequence-of'."
-    (pr-str values-at-path) full-path))
-
-(defn- single-val-error [value full-path]
-  (format "Map value %s, at path %s, was sequential but not tagged with 'sequence-of'."
-          (pr-str value) full-path))
-
-(defn- predicate-fail-error [val-at-path full-path pred]
-  (format "Map value %s, at path %s, did not match predicate '%s'."
-          (pr-str val-at-path) full-path (u/pretty-fn-str pred)))
-
-(defn- instance-of-fail-error [val-at-path full-path expected-class]
-  (format "Map value %s at path %s expected class %s, but was %s"
-          (pr-str val-at-path) full-path (pr-str expected-class) (pr-str (class val-at-path))))
-;;
+(def ^:private ^:dynamic *error-reporter* nil)
 
 (defn- validator-type [validator]
   (cond (s/sequence-of? validator) :sequence
@@ -46,25 +57,25 @@
 
 (defmethod errors-for-path-content :schema [full-path val-at-path schema]
   (if (sequential? val-at-path)
-    [(single-val-error val-at-path full-path)]
-    (validation-errors full-path schema val-at-path)))
+    [(single-val-error *error-reporter* val-at-path full-path)]
+    (validation-errors *error-reporter* full-path schema val-at-path)))
 
 (defmethod errors-for-path-content :class [full-path val-at-path expected-class]
   (cond (sequential? val-at-path)
-        [(single-val-error val-at-path full-path)]
+        [(single-val-error *error-reporter* val-at-path full-path)]
         
         (not (instance? expected-class val-at-path))
-        [(instance-of-fail-error val-at-path full-path expected-class)]
+        [(instance-of-fail-error *error-reporter* val-at-path full-path expected-class)]
         
         :else
         []))
 
 (defmethod errors-for-path-content :predicate [full-path val-at-path pred]
   (cond (sequential? val-at-path)
-        [(single-val-error val-at-path full-path)]
+        [(single-val-error *error-reporter* val-at-path full-path)]
         
         (not ((u/fn->fn-thats-false-if-throws pred) val-at-path))  ;; keeps us safe from ClassCastExceptions, etc
-        [(predicate-fail-error val-at-path full-path pred)]
+        [(predicate-fail-error *error-reporter* val-at-path full-path pred)]
         
         :else
         []))
@@ -86,7 +97,7 @@
 (defmethod errors-for-path-content :sequence [full-path values-at-path validator]
   (if (or (nil? values-at-path) (sequential? values-at-path))
     (mapcat #(errors-for-path-content full-path % (:single-item-validator validator)) values-at-path)
-    [(sequential-val-error values-at-path full-path)]))
+    [(sequential-val-error *error-reporter* values-at-path full-path)]))
 
 (defn- matches-validator? [validator x]
   (empty? (errors-for-path-content [] x validator)))
@@ -114,7 +125,7 @@
           []
           
           (not contains-path?)
-          [(missing-path-error full-path)]
+          [(missing-path-error *error-reporter* full-path)]
           
           :else
           (errors-for-path-content full-path val-at-path validator))))
@@ -186,9 +197,8 @@
     (set (for [xtra-path (extraneous-paths schema m)
                :when (not-any? (partial matches-any-wildcard-path? all-wildcard-paths)
                                (u/subpaths xtra-path))]
-           (extraneous-path-error (into parent-path xtra-path))))))
+           (extraneous-path-error *error-reporter* (into parent-path xtra-path))))))
 
-;; TODO: ALEX - September 1, 2012 -- extract third namespace clj-schema.validation for all validating code
 (defn validation-errors
   "Returns a set of all the validation errors found when comparing a given
    map m, against the supplied schema.
@@ -196,14 +206,15 @@
    A validator is either a schema, predicate, Class or vector of them.
    See this ns's :doc meta for more details."
   ([schema m]
-    (validation-errors [] schema m))
-  ([parent-path schema m]
-     (if-not (or (nil? m) (map? m))
-       #{(non-map-error parent-path m)}
-       (set/union (path-content-errors parent-path schema m)
-                  
-                  ;; check for wildcard extra paths specially above
-                  (extraneous-paths-errors parent-path  (wildcard-paths schema) (s/subtract-wildcard-paths schema) m)))))
+     (validation-errors (StringErrorReporter.) [] schema m))
+  ([error-reporter schema m]
+     (validation-errors error-reporter [] schema m))
+  ([error-reporter parent-path schema m]
+     (binding [*error-reporter* error-reporter]
+       (if-not (or (nil? m) (map? m))
+         #{(non-map-error *error-reporter* parent-path m)}
+         (set/union (path-content-errors parent-path schema m)
+                    (extraneous-paths-errors parent-path (wildcard-paths schema) (s/subtract-wildcard-paths schema) m))))))
 
 (defn valid? [schema m]
   (empty? (validation-errors schema m)))
