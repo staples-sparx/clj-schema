@@ -144,6 +144,9 @@
   [validator]
   (WildcardValidator. validator))
 
+(defn wildcard-paths [schema]
+  (filter wildcard-path? (schema-path-set schema)))
+
 
 ;;;; Schema Path Modifiers
 
