@@ -406,7 +406,7 @@
      ;; TODO ALex July 30, 2012 -- move into internal ns all about wildcard paths
      (deftest test-wildcard-path->concrete-paths
        (are [m wildcard-path concrete-paths] (= (set concrete-paths)
-                                               (set (wildcard-path->concrete-paths m
+                                               (set (#'clj-schema.validation/wildcard-path->concrete-paths m
                                                       wildcard-path)))
          ;; base cases
          {}
@@ -444,7 +444,7 @@
 
      ;; same here
      (deftest test-covered-by-wildcard-path?
-       (are [path wildcard-path covered?] (= covered? (covered-by-wildcard-path? path wildcard-path))
+       (are [path wildcard-path covered?] (= covered? (#'clj-schema.validation/covered-by-wildcard-path? path wildcard-path))
 
          ;; base case
          []

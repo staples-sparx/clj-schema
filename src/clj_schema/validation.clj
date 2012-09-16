@@ -72,7 +72,7 @@
 
 (declare validation-errors)
 
-(defmulti errors-for-path-content #(validator-type %3))
+(defmulti ^:private errors-for-path-content #(validator-type %3))
 
 (defmethod errors-for-path-content :schema [full-path val-at-path schema]
   (if (sequential? val-at-path)
@@ -126,7 +126,7 @@
   (when (map? x)
     (keys x)))
 
-(defn wildcard-path->concrete-paths [m [path-first & path-rest :as the-wildcard-path]]
+(defn- wildcard-path->concrete-paths [m [path-first & path-rest :as the-wildcard-path]]
   (if (empty? the-wildcard-path)
     [[]]
     (let [keys-that-match-validator (if (s/wildcard-validator? path-first)
@@ -176,7 +176,7 @@
            validated-subpath
            path))))
 
-(defn remove-subpaths [paths]
+(defn- remove-subpaths [paths]
   (let [all-subpaths (distinct (mapcat u/subpaths paths))
         any-of-all-subpaths-is-super-path? (fn [p]
                                              (some #(and (u/subpath? p %) (not= p %))
@@ -188,7 +188,7 @@
         shortened (shorten-to-schema-path-set (u/paths *map-under-validation*) schema-paths)]
     (set/difference shortened schema-paths)))
 
-(defn covered-by-wildcard-path? [[path-first & path-rest :as path-to-check] [wildcard-first & wildcard-rest :as wildcard-path]]
+(defn- covered-by-wildcard-path? [[path-first & path-rest :as path-to-check] [wildcard-first & wildcard-rest :as wildcard-path]]
   (if-not (= (count path-to-check) (count wildcard-path)) ;; optimization
     false
     (cond (empty? path-to-check)
@@ -204,7 +204,7 @@
             (covered-by-wildcard-path? path-rest wildcard-rest)
             false))))
 
-(defn matches-any-wildcard-path? [path]
+(defn- matches-any-wildcard-path? [path]
   (some (partial covered-by-wildcard-path? path) *all-wildcard-paths*))
 
 (defn- extraneous-paths-errors []
