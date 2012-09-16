@@ -25,10 +25,10 @@
   (non-map-error [_ {:keys [parent-path map-under-validation]}]
     (format "At path %s, expected a map, got %s instead." parent-path (pr-str map-under-validation)))
   
-  (extraneous-path-error [_ state xtra-path]
+  (extraneous-path-error [_ _ xtra-path]
     (format "Path %s was not specified in the schema." xtra-path))
   
-  (missing-path-error [_ state missing-path]
+  (missing-path-error [_ _ missing-path]
     (format "Map did not contain expected path %s." missing-path))
   
   (sequential-val-error [_ {:keys [full-path]} values-at-path]
