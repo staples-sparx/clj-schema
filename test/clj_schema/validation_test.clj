@@ -112,8 +112,8 @@
     [[:a] (sequence-of [first-name-bob? person-schema])]
     {:a [{:name {:first "Roberto"} :height 44} {:name {:first "Chris"} :height "4a"}]}
       #{"Map value \"4a\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"
-      "Map value {:name {:first \"Roberto\"}, :height 44}, at path [:a], did not match predicate 'clj-schema.schema-test/first-name-bob?'."
-      "Map value {:name {:first \"Chris\"}, :height \"4a\"}, at path [:a], did not match predicate 'clj-schema.schema-test/first-name-bob?'."}
+      "Map value {:name {:first \"Roberto\"}, :height 44}, at path [:a], did not match predicate 'clj-schema.validation-test/first-name-bob?'."
+      "Map value {:name {:first \"Chris\"}, :height \"4a\"}, at path [:a], did not match predicate 'clj-schema.validation-test/first-name-bob?'."}
 
     ;;;; ...  multiple strict schemas together makes little sense - one schema will think extra keys were not specified by it, though they were by the other schema
     [[:a] (sequence-of [name-schema person-schema])]
