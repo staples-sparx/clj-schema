@@ -232,7 +232,7 @@
                *map-under-validation* m
                *schema* schema
                *parent-path* parent-path
-               *all-wildcard-paths* (s/wildcard-paths schema)
+               *all-wildcard-paths* (s/wildcard-path-set schema)
                *schema-without-wildcard-paths* (s/subtract-wildcard-paths schema)]
        (if-not (or (nil? m) (map? m))
          #{(non-map-error error-reporter (state-map-for-reporter parent-path))}

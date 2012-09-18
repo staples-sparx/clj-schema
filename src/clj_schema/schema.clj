@@ -26,7 +26,8 @@
       `def-loose-schema` creates a loose schema, which expects its paths to
       be present but does not complain about extra paths."}
   clj-schema.schema
-  (:require [clj-schema.internal.utils :as u]))
+  (:require [clj-schema.internal.utils :as u]
+            [clojure.set :as set]))
 
 
 ;;;; Validation Schema Creation
@@ -116,8 +117,8 @@
 (defn wildcard-path? [schema-path]
   (some wildcard-validator? schema-path))
 
-(defn wildcard-paths [schema]
-  (filter wildcard-path? (schema-path-set schema)))
+(defn wildcard-path-set [schema]
+  (set/select wildcard-path? (schema-path-set schema)))
 
 
 ;;;; Schema Path Modifiers
@@ -133,7 +134,7 @@
   (boolean (::optional-path (meta schema-path))))
 
 (defn optional-path-set [schema]
-  (clojure.set/select optional-path? (schema-path-set schema)))
+  (set/select optional-path? (schema-path-set schema)))
 
 
 ;; Filtering Schemas
