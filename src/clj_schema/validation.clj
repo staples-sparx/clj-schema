@@ -243,10 +243,13 @@
   ([error-reporter schema m]
     (empty? (validation-errors error-reporter schema m))))
 
-(defn validate-arg
-  ([error-reporter arg schema success-handler-fn error-handler-fn]
-    (if-let [errors (seq (validation-errors error-reporter schema arg))]
-      (error-handler-fn arg errors)
-      (success-handler-fn arg)))
-  ([arg schema success-handler-fn error-handler-fn]
-    (validate-arg (StringErrorReporter.) arg schema success-handler-fn error-handler-fn)))
+(defn validate-and-handle
+  "Validates map m vs a schema.
+   If it passes, then calls success-handler-fn passing m to it.
+   If it fails, then calls error-handler-fn passing m and any validation errors to it."
+  ([error-reporter m schema success-handler-fn error-handler-fn]
+    (if-let [errors (seq (validation-errors error-reporter schema m))]
+      (error-handler-fn m errors)
+      (success-handler-fn m)))
+  ([m schema success-handler-fn error-handler-fn]
+    (validate-and-handle (StringErrorReporter.) m schema success-handler-fn error-handler-fn)))

@@ -1,4 +1,4 @@
-(ns clj-schema.schema-test
+(ns clj-schema.validation-test
   (:use clojure.test
         clj-schema.schema
         clj-schema.validation
@@ -477,3 +477,18 @@
          [:a "S"]
          [(wild keyword?) (wild String)]
          true))
+
+(defschema foo-schema
+  [[:a] String])
+
+(deftest test-validate-and-handle
+  (is (= "SUCCESS: {:a \"one\"}"
+         (validate-and-handle {:a "one"}
+                              foo-schema
+                              (fn [m] (str "SUCCESS: " m))
+                              (fn [m errors] (str "FAIL: " m errors)))))
+  (is (= "FAIL: {:b 2}(\"Map did not contain expected path [:a].\" \"Path [:b] was not specified in the schema.\")"
+         (validate-and-handle {:b 2}
+                              foo-schema
+                              (fn [m] (str "SUCCESS: " m))
+                              (fn [m errors] (str "FAIL: " m errors))))))
