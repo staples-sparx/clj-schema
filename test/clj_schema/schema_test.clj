@@ -66,3 +66,11 @@
          family-schema 2
          []  0
          nil 0))
+
+(deftest test-optional-path-set
+  (is (= #{} (optional-path-set [])))
+  (is (= #{} (optional-path-set [[:a] String])))
+  (is (= #{[:a] [:b]} (optional-path-set [(optional-path [:b]) String
+                                          [:c] pos?
+                                          (optional-path [:a]) Integer]))))
+

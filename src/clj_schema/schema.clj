@@ -87,37 +87,6 @@
   (count (schema-rows schema)))
 
 
-;; Filtering Schemas
-
-(defn filter-schema
-  "Takes a pred like (fn [[path validator]] ...) and selects all schema rows that match."
-  [pred schema]
-  (let [new-schema (->> (schema-rows schema)
-                        (filter pred)
-                        (apply concat)
-                        vec)]
-    (with-meta new-schema (meta schema))))
-
-(defn subtract-paths
-  "Returns a new schema minus some paths."
-  [schema & paths]
-  (filter-schema (fn [[path validator]] (not (contains? (set paths) path)))
-                     schema))
-
-(defn select-schema-keys
-  "Returns a new schema with only the paths starting with the specified keys."
-  [schema & ks]
-  (filter-schema (fn [[path validator]] (contains? (set ks) (first path)))
-                      schema))
-
-(declare wildcard-path?)
-(defn subtract-wildcard-paths
-  "Returns a schema that is the same in all respects, except it has none of the wildcard paths."
-  [schema]
-  (filter-schema (fn [[path validator]] (not (wildcard-path? path)))
-                      schema))
-
-
 ;; Validator Modifiers
 
 ;; I can't use metadata to tag things as being validators that are meant to be run against
@@ -144,6 +113,9 @@
   [validator]
   (WildcardValidator. validator))
 
+(defn wildcard-path? [schema-path]
+  (some wildcard-validator? schema-path))
+
 (defn wildcard-paths [schema]
   (filter wildcard-path? (schema-path-set schema)))
 
@@ -160,8 +132,38 @@
 (defn optional-path? [schema-path]
   (boolean (::optional-path (meta schema-path))))
 
-(defn wildcard-path? [schema-path]
-  (some wildcard-validator? schema-path))
+(defn optional-path-set [schema]
+  (clojure.set/select optional-path? (schema-path-set schema)))
+
+
+;; Filtering Schemas
+
+(defn filter-schema
+  "Takes a pred like (fn [[path validator]] ...) and selects all schema rows that match."
+  [pred schema]
+  (let [new-schema (->> (schema-rows schema)
+                        (filter pred)
+                        (apply concat)
+                        vec)]
+    (with-meta new-schema (meta schema))))
+
+(defn subtract-paths
+  "Returns a new schema minus some paths."
+  [schema & paths]
+  (filter-schema (fn [[path validator]] (not (contains? (set paths) path)))
+                     schema))
+
+(defn select-schema-keys
+  "Returns a new schema with only the paths starting with the specified keys."
+  [schema & ks]
+  (filter-schema (fn [[path validator]] (contains? (set ks) (first path)))
+                      schema))
+
+(defn subtract-wildcard-paths
+  "Returns a schema that is the same in all respects, except it has none of the wildcard paths."
+  [schema]
+  (filter-schema (fn [[path validator]] (not (wildcard-path? path)))
+                      schema))
 
 
 ;;;; Namespace Info
