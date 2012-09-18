@@ -189,7 +189,7 @@
         shortened (shorten-to-schema-path-set (u/paths *map-under-validation*) schema-paths)]
     (set/difference shortened schema-paths)))
 
-(defn covered-by-wildcard-path? [[path-first & path-rest :as path-to-check] [wildcard-first & wildcard-rest :as wildcard-path]]
+(defn- covered-by-wildcard-path? [[path-first & path-rest :as path-to-check] [wildcard-first & wildcard-rest :as wildcard-path]]
   (let [path-to-check-count (count path-to-check)]
     (cond (not= path-to-check-count (count wildcard-path))
           false
