@@ -189,20 +189,21 @@
         shortened (shorten-to-schema-path-set (u/paths *map-under-validation*) schema-paths)]
     (set/difference shortened schema-paths)))
 
-(defn- covered-by-wildcard-path? [[path-first & path-rest :as path-to-check] [wildcard-first & wildcard-rest :as wildcard-path]]
-  (cond (empty? path-to-check)
-        true
-        
-        (s/wildcard-validator? wildcard-first)
-        (if (matches-validator? (:validator wildcard-first) path-first)
-          (covered-by-wildcard-path? path-rest wildcard-rest)
-          false)
+(defn covered-by-wildcard-path? [[path-first & path-rest :as path-to-check] [wildcard-first & wildcard-rest :as wildcard-path]]
+  (let [path-to-check-count (count path-to-check)]
+    (cond (not= path-to-check-count (count wildcard-path))
+          false
 
-        (= wildcard-first path-first)
-        (covered-by-wildcard-path? path-rest wildcard-rest)
-        
-        :else
-        false))
+          (zero? path-to-check-count)
+          true
+
+          (s/wildcard-validator? wildcard-first)
+          (if (matches-validator? (:validator wildcard-first) path-first)
+            (covered-by-wildcard-path? path-rest wildcard-rest)
+            false)
+
+          :else
+          (covered-by-wildcard-path? path-rest wildcard-rest))))
 
 (defn- matches-any-wildcard-path? [path]
   (some (partial covered-by-wildcard-path? path) *all-wildcard-paths*))
