@@ -17,7 +17,7 @@
        [:p :q :r] [:or nil? r-schema]    ;; an 'or' statement - need just one to pass
        (optional-path [:z]) (sequence-of string?)
        [:a b :d] (loose-valdiation-schema [[:cat :name] String ;; can use Java Class objects directly
-                                           [:cat :color] String])
+                                           [:cat :colors] (set-of String)])
       ... ]
 
       `defschema` creates a strict schema, which expects only the paths it
@@ -101,6 +101,15 @@
 
 (defn sequence-of [single-item-validator]
   (SequenceOfItemsValidator. single-item-validator))
+
+; set-of
+(defrecord SetOfItemsValidator [single-item-validator])
+
+(defn set-of? [validator]
+  (= SetOfItemsValidator (class validator)))
+
+(defn set-of [single-item-validator]
+  (SetOfItemsValidator. single-item-validator))
 
 ; wild
 (defrecord WildcardValidator [validator])

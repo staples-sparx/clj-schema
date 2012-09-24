@@ -253,6 +253,46 @@
      {:a [4 5 6 7]}
      #{}
 
+
+     ;;;; validator *not* marked as 'set-of' but value is set? - causes an error
+     [[:a] person-schema]
+     {:a #{{:name {:first "Roberto"} :height "76"}}}
+     #{"Map value #{{:name {:first \"Roberto\"}, :height \"76\"}}, at path [:a], was a set but not tagged with 'set-of'."}
+
+     ;;;; marked as 'set-of' but only one value - causes an error
+     [[:a] (set-of person-schema)]
+     {:a {:name {:first "Roberto"} :height "76"}}
+     #{"Map value {:name {:first \"Roberto\"}, :height \"76\"}, at path [:a], was not a set but was tagged with 'set-of'."}
+
+     ;;;; validator *not* marked as 'set-of' but value is set? - causes an error
+     [[:a] integer?]
+     {:a #{1 2 3}}
+     #{"Map value #{1 2 3}, at path [:a], was a set but not tagged with 'set-of'."}
+
+     ;;;; using 'set-of' with an 'Number' predicate - means there is a set of numbers
+     [[:a] (set-of Number)]
+     {:a 1}
+       #{"Map value 1, at path [:a], was not a set but was tagged with 'set-of'."}
+
+     ;;;; nil is an acceptable value for a 'set-of' validator
+     [[:a] (set-of integer?)]
+     {:a nil}
+     #{}
+
+     ;;;; set-of can be used from within other nested validators -- #{:a} is single item
+     [[:a] [:or Number (set-of Number)]]
+     {:a 4}
+     #{}
+
+     ;;;; ... <continued from above> -- [:a] is sequential
+     [[:a] [:or Number (set-of Number)]]
+     {:a #{4 5 6 7}}
+     #{}
+
+
+
+     
+
      ;;;; nested loose schemas don't count toward strict schema's keys
      (strict-schema
        [[:a] loose-height-schema])

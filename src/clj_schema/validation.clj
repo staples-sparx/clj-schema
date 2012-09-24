@@ -11,12 +11,16 @@
      :map-under-validation - the map being validated
      :schema - the schema being used to validate
      :parent-path - the path if any to the current map, from a map that contained this one
-     :full-path - the full path in a nested map structure"
+     :full-path - the full path in a nested map structure
+     :all-wildcard-paths - any path that includes a wildcard
+     :schema-without-wildcard-paths - a version of the schema with wildcard paths removed"
   (non-map-error [this state])
   (extraneous-path-error [this state xtra-path])
   (missing-path-error [this state missing-path])
   (sequential-val-error [this state values-at-path])
+  (not-a-set-error [_ state value-at-path])
   (single-val-error [this state value])
+  (set-not-single-error [this state values-at-path])
   (predicate-fail-error [this state val-at-path pred])
   (instance-of-fail-error [this state val-at-path expected-class]))
 
@@ -33,6 +37,14 @@
   
   (sequential-val-error [_ {:keys [full-path]} values-at-path]
     (format "Map value %s, at path %s, was a single value but was tagged with 'sequence-of'."
+            (pr-str values-at-path) full-path))
+
+  (not-a-set-error [_ {:keys [full-path]} value-at-path]
+    (format "Map value %s, at path %s, was not a set but was tagged with 'set-of'."
+            (pr-str value-at-path) full-path))
+
+  (set-not-single-error [_ {:keys [full-path]} values-at-path]
+    (format "Map value %s, at path %s, was a set but not tagged with 'set-of'."
             (pr-str values-at-path) full-path))
   
   (single-val-error [_ {:keys [full-path]} value]
@@ -65,6 +77,7 @@
 
 (defn- validator-type [validator]
   (cond (s/sequence-of? validator) :sequence
+        (s/set-of? validator) :set
         (s/schema? validator) :schema
         (class? validator) :class
         (and (sequential? validator) (= :or (first validator))) :or-statement
@@ -76,12 +89,20 @@
 (defmulti ^{:private true} errors-for-path-content #(validator-type %3))
 
 (defmethod errors-for-path-content :schema [full-path val-at-path schema]
-  (if (sequential? val-at-path)
-    [(single-val-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
-    (validation-errors *error-reporter* full-path schema val-at-path)))
+  (cond (set? val-at-path)
+        [(set-not-single-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
+        
+        (sequential? val-at-path)
+        [(single-val-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
+
+        :else
+        (validation-errors *error-reporter* full-path schema val-at-path)))
 
 (defmethod errors-for-path-content :class [full-path val-at-path expected-class]
-  (cond (sequential? val-at-path)
+  (cond (set? val-at-path)
+        [(set-not-single-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
+        
+        (sequential? val-at-path)
         [(single-val-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
         
         (not (instance? expected-class val-at-path))
@@ -91,7 +112,10 @@
         []))
 
 (defmethod errors-for-path-content :predicate [full-path val-at-path pred]
-  (cond (sequential? val-at-path)
+  (cond (set? val-at-path)
+        [(set-not-single-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
+
+        (sequential? val-at-path)
         [(single-val-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
         
         (not ((u/fn->fn-thats-false-if-throws pred) val-at-path))  ;; keeps us safe from ClassCastExceptions, etc
@@ -118,6 +142,11 @@
   (if (or (nil? values-at-path) (sequential? values-at-path))
     (mapcat #(errors-for-path-content full-path % (:single-item-validator validator)) values-at-path)
     [(sequential-val-error *error-reporter* (state-map-for-reporter full-path) values-at-path)]))
+
+(defmethod errors-for-path-content :set [full-path values-at-path validator]
+  (if (or (nil? values-at-path) (set? values-at-path))
+    (mapcat #(errors-for-path-content full-path % (:single-item-validator validator)) values-at-path)
+    [(not-a-set-error *error-reporter* (state-map-for-reporter full-path) values-at-path)]))
 
 (defn- matches-validator? [validator x]
   (empty? (errors-for-path-content [] x validator)))
@@ -152,9 +181,7 @@
 
 (defn- errors-for-possibly-wildcard-path [schema-path validator]
   (if (s/wildcard-path? schema-path)
-    (let [concrete-paths (wildcard-path->concrete-paths
-                          *map-under-validation*
-                          schema-path)
+    (let [concrete-paths (wildcard-path->concrete-paths *map-under-validation* schema-path)
           ;; TODO ALex - Sep 15, 2012 - this is here because metadata lost - add abstraction to keep metadata for schemas across a translation
           concrete-paths (if (s/optional-path? schema-path) (map s/optional-path concrete-paths) concrete-paths)]
       (mapcat #(errors-for-concrete-path % validator) concrete-paths))
