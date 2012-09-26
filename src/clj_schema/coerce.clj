@@ -24,7 +24,7 @@
 
 
 
-(declare coerce-map)
+(declare coerce-types)
 
 (defmulti coerce-value
   (fn [validator _x_]
@@ -34,7 +34,7 @@
           :else                        validator)))
 
 (defmethod coerce-value :schema [schema x]
-  (coerce-map schema x))
+  (coerce-types schema x))
 
 (defmethod coerce-value :sequence [seq-validator xs]
   (let [validator (:single-item-validator seq-validator)]
@@ -59,7 +59,9 @@
 (defmethod coerce-value :default [_ x]
   x)
 
-(defn coerce-map [schema m]
+(defn coerce-types
+  "Attempts to coerce values of a map, to match the expected Class specified in the schema."
+  [schema m]
   (when-not (empty? (sch/wildcard-path-set schema))
     (throw (IllegalArgumentException. (str "Does not support type coercion for schemas with wildcards.\n" schema))))
   (reduce (fn [coerced-m [path validator]]

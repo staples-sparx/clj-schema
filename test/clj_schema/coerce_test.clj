@@ -9,7 +9,7 @@
   [[:color] Keyword])
 
 (deftest test-coerce-class
-  (are [schema input-map result] (= result (coerce-map (sch/strict-schema schema) input-map))
+  (are [schema input-map result] (= result (coerce-types (sch/strict-schema schema) input-map))
 
        ;; simple case
        [[:a] String]
@@ -83,4 +83,4 @@
 (deftest test-attempt-to-coerce-wildcard-schema
   (is (thrown-with-msg? IllegalArgumentException
         #"Does not support type coercion for schemas with wildcards"
-        (coerce-map (sch/strict-schema [[(sch/wild :a)] true?]) {:any "map"}))))
+        (coerce-types (sch/strict-schema [[(sch/wild :a)] true?]) {:any "map"}))))
