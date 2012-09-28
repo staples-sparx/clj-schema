@@ -6,11 +6,12 @@ Define validation schemas for validating maps.
 Schemas are any number of paths through a nested map, paired with a
 validator.
 
-There are 5 types of validators: * any predicate function * any Class
-object, i.e. String, clojure.lang.Keyword, java.util.Date, etc * any
-clj-schema schema * [validator1 validator2] to indicate both validator1
-AND validator2 * [:or validator1 validator2] to indicate both validator1
-OR validator2
+There are 5 types of validators: 
+
+*   any predicate function * any Class object, i.e. String, clojure.lang.Keyword, java.util.Date, etc 
+*   any clj-schema schema 
+*   [validator1 validator2] to indicate both validator1 AND validator2 
+*   [:or validator1 validator2] to indicate both validator1 OR validator2
 
 Any validator may be wrapped in sequence-of to indicate the value should
 be sequential, or wrapped in set-of to indicate the value is a set. By
@@ -39,11 +40,11 @@ Example schema w/ wildcard paths:
 ```clj
 (defschema foo-schema 
   [[:a (wild String) (wild Number)] String])
+```
 
   => matches maps such as: 
     `{:a {\"car\" {1.21 \"jigawatts\"}}}` 
     `{:a {\"banana\" {2 \"green\"}}}`
-```
 
 `defschema` creates a strict schema, which expects only the paths it
 describes to be present on the given map.
