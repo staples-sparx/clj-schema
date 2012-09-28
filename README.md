@@ -8,10 +8,11 @@ validator.
 
 There are 5 types of validators: 
 
-*   any predicate function * any Class object, i.e. String, clojure.lang.Keyword, java.util.Date, etc 
+*   any predicate function 
+*   any `Class` object, i.e. `String`, `clojure.lang.Keyword`, `java.util.Date`, etc 
 *   any clj-schema schema 
-*   [validator1 validator2] to indicate both validator1 AND validator2 
-*   [:or validator1 validator2] to indicate both validator1 OR validator2
+*   `[validator1 validator2]` to indicate both validator1 AND validator2 
+*   `[:or validator1 validator2]` to indicate both validator1 OR validator2
 
 Any validator may be wrapped in sequence-of to indicate the value should
 be sequential, or wrapped in set-of to indicate the value is a set. By
@@ -43,8 +44,11 @@ Example schema w/ wildcard paths:
 ```
 
   => matches maps such as: 
-    `{:a {\"car\" {1.21 \"jigawatts\"}}}` 
-    `{:a {\"banana\" {2 \"green\"}}}`
+    `{:a {"car" {1.21 "jigawatts"}}}` 
+    `{:a {"banana" {2 "green"
+                      5 "yellow"}
+          "apple" {1 "rotten"
+                   4 "delicious"}}}`
 
 `defschema` creates a strict schema, which expects only the paths it
 describes to be present on the given map.
@@ -55,12 +59,54 @@ present but does not complain about extra paths
 
 Map Validation Using Schemas
 ============================
-...
+ 
+`validation-errors` can be used to test a map vs a given schema. It can 
+find a variety of issues:
+
+*   thing we're validating wasn't a map
+*   map contained a path not specified in the schema (only for strict schemas)
+*   map was missing a specified path
+*   a path's value was single, but was specified as sequential
+*   a path's value was single, but was specified as a set
+*   a path's value was sequential, but was specified as single
+*   a path's value was a set, but was specified as single
+*   a path's value didn't pass the given predicate
+*   a path's value's Class wasn't an instance of the specified Class
+
+```clj
+(defschema person-schema
+  [[:name :first] String
+   [:name :last]  String
+   [:height]      Double])
+```
+
+```clj
+(validation-errors person-schema {})
+```
+
+```clj
+;; => #{"Map did not contain expected path [:name :first]." 
+;;      "Map did not contain expected path [:name :last]."
+;;      "Map did not contain expected path [:hieght]."}
+```
+
+Supports alternate report formats.  You just have to implement the ErrorReporter 
+protocol, and then pass it in like this:
+
+```clj
+(error-validation MySpecialErrorReporter person-schema {...})
+```
 
 
 Type Coercion using Schemas
 ===========================
-...
+
+Very new.  Will likely change a bunch.
+
+Support for attempting to coerce a map to pass a given schema.  This can be used 
+to assist JSON deserialization or XML parsing, for example.
+
+Uses a multi-method to define coercers, so you can extend it.
 
 
 Developer Tests
