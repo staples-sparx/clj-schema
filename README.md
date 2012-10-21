@@ -98,6 +98,41 @@ protocol, and then pass it in like this:
 ```
 
 
+Test Data and Test Data Factories
+=================================
+
+In the clj-schema.fixtures namespace.
+
+```clj
+(defschema person-schema
+  [[:name :first] String
+   [:name :last]  String
+   [:height]      Double])
+
+;; This will blow up at load time if the 'alex' map you want to use in your test
+;; turns out to not be valid
+(def-fixture alex person-schema
+  {:name {:first "Alex"
+          :last "Baranosky"}
+   :height 71})
+
+;; Let's define a factory that makes people. And then...
+(def-fixture-factory person person-schema
+  [& {:keys [first-name last-name height]
+      :or {first-name "Alex"
+           last-name "Baranosky"
+           height 71}}]
+  {:name {:first first-name
+          :last last-name}
+   :height height})
+
+;; ... write test that tests a fictional function called sort-people-by-height
+(deftest test-sort-people-by-height
+  (is [(person :height 67) (person :height 89) (person :height 98)]
+      (sort-people-by-height [(person :height 98) (person :height 67) (person :height 89)])))
+
+```
+
 Type Coercion using Schemas
 ===========================
 
