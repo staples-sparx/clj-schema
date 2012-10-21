@@ -87,7 +87,7 @@ find a variety of issues:
 ```clj
 ;; => #{"Map did not contain expected path [:name :first]." 
 ;;      "Map did not contain expected path [:name :last]."
-;;      "Map did not contain expected path [:hieght]."}
+;;      "Map did not contain expected path [:height]."}
 ```
 
 Supports alternate report formats.  You just have to implement the ErrorReporter 
@@ -101,7 +101,10 @@ protocol, and then pass it in like this:
 Test Data and Test Data Factories
 =================================
 
-In the clj-schema.fixtures namespace.
+Rationale: to keep your test data from growing out of sync with your real data,
+and to make factories for concisely creating valid fake data for tests.
+
+You can find this code in the clj-schema.fixtures namespace.
 
 ```clj
 (defschema person-schema
