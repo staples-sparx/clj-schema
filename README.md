@@ -126,10 +126,10 @@ In the clj-schema.fixtures namespace.
           :last last-name}
    :height height})
 
-;; ... write test that tests a fictional function called sort-people-by-height
+;; ... write a test that tests a fictional function called sort-people-by-height
 (deftest test-sort-people-by-height
-  (is [(person :height 67) (person :height 89) (person :height 98)]
-      (sort-people-by-height [(person :height 98) (person :height 67) (person :height 89)])))
+  (is (= [(person :height 67) (person :height 89) (person :height 98)]
+         (sort-people-by-height [(person :height 98) (person :height 67) (person :height 89)]))))
 
 ```
 
