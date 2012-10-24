@@ -115,28 +115,38 @@ protocol, and then pass it in like this:
 
   (extraneous-path-error [_ {:keys [map-under-validation]} extra-path]
     {:type :extraneous-path
+     :map map-under-validation
      :unexpected-path extra-path})
 
   (missing-path-error [_ {:keys [map-under-validation]} missing-path]
     {:type :missing-path
+     :map map-under-validation
      :missing-path missing-path})
 
   (sequential-val-error [_ {:keys [full-path map-under-validation]} values-at-path]
     {:type :sequential-val
+     :map map-under-validation
+     :path full-path
      :value values-at-path})
 
   (single-val-error [_ {:keys [full-path map-under-validation]} value]
     {:type :single-val
+     :map map-under-validation
+     :path full-path
      :value value})
 
   (predicate-fail-error [_ {:keys [full-path map-under-validation]} val-at-path pred]
     {:type :predicate
+     :map map-under-validation
+     :path full-path
      :value val-at-path
      :predicate pred})
 
   (instance-of-fail-error [_ {:keys [full-path map-under-validation]} val-at-path expected-class]
     {:type :instance-of
      :value val-at-path
+     :map map-under-validation
+     :path full-path
      :values-class (class val-at-path)
      :expected-class expected-class}))
 
