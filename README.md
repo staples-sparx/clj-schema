@@ -27,6 +27,9 @@ matching a given validator.
 Example Schema:
 
 ```clj
+(:require [clj-schema.schema :refer [defschema optional-path sequence-of 
+                                     loose-validation-schema set-of]])
+
 (defschema bar-schema 
   [[:a :b :c] pred 
    [:x :y :z] [pred2 pred3 z-schema] ;; implicit 'and' - all three must pass 
@@ -81,6 +84,8 @@ find a variety of issues:
 ```
 
 ```clj
+(:require [clj-schema.validation :refer [validation-errors])
+
 (validation-errors person-schema {})
 ```
 
@@ -106,7 +111,11 @@ and to make factories for concisely creating valid fake data for tests.
 
 You can find this code in the clj-schema.fixtures namespace.
 
+These should probably be renamed to something less confusing. Any ideas?
+
 ```clj
+(:require [clj-schema.fixtures :refer [def-fixture def-fixture-factory])
+
 (defschema person-schema
   [[:name :first] String
    [:name :last]  String
