@@ -95,11 +95,53 @@ find a variety of issues:
 ;;      "Map did not contain expected path [:height]."}
 ```
 
-Supports alternate report formats.  You just have to implement the ErrorReporter 
+Supports alternate report formats. You just have to implement the ErrorReporter 
 protocol, and then pass it in like this:
 
 ```clj
-(error-validation MySpecialErrorReporter person-schema {...})
+(:require [clj-schema.validation :refer [ErrorReporter validation-errors]])
+
+;; An example of a data-based error format, instead of using the default StringErrorReporter.
+
+(deftype CljDataErrorReporter
+  []
+  ErrorReporter
+  ;; The second arg to each of the protocol's methods is a map of various state 
+  ;; of the validation at the time the error was generated. You're protocol 
+  ;; implementations can access any of that information for your reporting purposes.
+  ;; For reference see `clj-schema.validation/state-map-for-reporter` which creates that map.
+  (non-map-error [_ {:keys [parent-path map-under-validation]}]
+    {:type :non-map})
+
+  (extraneous-path-error [_ {:keys [map-under-validation]} extra-path]
+    {:type :extraneous-path
+     :unexpected-path extra-path})
+
+  (missing-path-error [_ {:keys [map-under-validation]} missing-path]
+    {:type :missing-path
+     :missing-path missing-path})
+
+  (sequential-val-error [_ {:keys [full-path map-under-validation]} values-at-path]
+    {:type :sequential-val
+     :value values-at-path})
+
+  (single-val-error [_ {:keys [full-path map-under-validation]} value]
+    {:type :single-val
+     :value value})
+
+  (predicate-fail-error [_ {:keys [full-path map-under-validation]} val-at-path pred]
+    {:type :predicate
+     :value val-at-path
+     :predicate pred})
+
+  (instance-of-fail-error [_ {:keys [full-path map-under-validation]} val-at-path expected-class]
+    {:type :instance-of
+     :value val-at-path
+     :values-class (class val-at-path)
+     :expected-class expected-class}))
+
+(validation-errors CljDataErrorReporter person-schema {:map "you" 
+                                                       :are "validating"})
 ```
 
 
