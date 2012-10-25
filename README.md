@@ -53,6 +53,15 @@ Example schema w/ wildcard paths:
           "apple" {1 "rotten"
                    4 "delicious"}}}`
 
+You can combine more than one schema into a combined schema like this:
+
+```clj
+(defschema bar-schema
+  foo-schema
+  [[:bar] String
+   [:baz] #(re-matches #".*baz.*" %)])
+```
+
 `defschema` creates a strict schema, which expects only the paths it
 describes to be present on the given map.
 
