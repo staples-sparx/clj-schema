@@ -50,9 +50,12 @@ Example schema w/ wildcard paths:
 
 ;; and:
 {:a {"banana" {2 "green"
-                5 "yellow"}
+               5 "yellow"}
       "apple" {1 "rotten"
                4 "delicious"}}}
+
+;; and:
+{:a {}}
 ```
 
 You can combine more than one schema into a combined schema like this:
