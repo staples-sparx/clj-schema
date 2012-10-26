@@ -1,4 +1,4 @@
-Schemas for Clojure maps
+Schemas for Clojure Maps
 ========================
 
 Define validation schemas for validating maps.
@@ -178,7 +178,7 @@ and to make factories for concisely creating valid fake data for tests.
 You can find this code in the clj-schema.fixtures namespace.
 
 These should probably be renamed to something less confusing. Any ideas?
-
+`
 ```clj
 (:require [clj-schema.fixtures :refer [def-fixture def-fixture-factory])
 
@@ -209,6 +209,16 @@ These should probably be renamed to something less confusing. Any ideas?
   (is (= [(person :height 67) (person :height 89) (person :height 98)]
          (sort-people-by-height [(person :height 98) (person :height 67) (person :height 89)]))))
 
+;; Fixture factories can also be defined as multi-arity
+(def-schema rectangle-schema
+  [[:height] Number 
+   [:width]  Number])
+
+(def-fixture-factory rectangle rectangle-schema
+  ([h w] 
+    {:height h :width w}) 
+  ([length]
+    {:height length :width length}))
 ```
 
 Type Coercion using Schemas
