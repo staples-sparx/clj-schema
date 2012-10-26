@@ -44,14 +44,16 @@ Example schema w/ wildcard paths:
 ```clj
 (defschema foo-schema 
   [[:a (wild String) (wild Number)] String])
-```
 
-  => matches maps such as: 
-    `{:a {"car" {1.21 "jigawatts"}}}` 
-    `{:a {"banana" {2 "green"
-                      5 "yellow"}
-          "apple" {1 "rotten"
-                   4 "delicious"}}}`
+;; matches maps such as: 
+{:a {"car" {1.21 "jigawatts"}}}    
+
+;; and:
+{:a {"banana" {2 "green"
+                5 "yellow"}
+      "apple" {1 "rotten"
+               4 "delicious"}}}
+```
 
 You can combine more than one schema into a combined schema like this:
 
