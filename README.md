@@ -121,7 +121,7 @@ protocol, and then pass it in like this:
   []
   ErrorReporter
   ;; The second arg to each of the protocol's methods is a map of various state 
-  ;; of the validation at the time the error was generated. You're protocol 
+  ;; of the validation at the time the error was generated. Your protocol 
   ;; implementations can access any of that information for your reporting purposes.
   ;; For reference see `clj-schema.validation/state-map-for-reporter` which creates that map.
   (non-map-error [_ {:keys [parent-path map-under-validation]}]
@@ -231,6 +231,26 @@ to assist JSON deserialization or XML parsing, for example.
 
 Uses a multi-method to define coercers, so you can extend it.
 
+Validated Compojure Routes
+==========================
+
+Greg Spurrier beat me to it and created a nice library for creating validated 
+routes, called [checked-route](https://github.com/gregspurrier/checked-route). It is a natural match to clj-schema, and I 
+recommend you check it out.
+
+```clj
+;; Example:
+(:require [checked-route.route :as checked]
+          [clj-schema.schema :as sch]
+          [clj-schema.validation :as val]
+          [clj-schema.validators :as v])
+
+(defschema user-params-schema 
+  [[:name] v/NonEmptyString])
+
+(checked/POST "/user" {^{:check #(val/validation-errors user-params-schema %)} params :params}
+  (do-something params))
+```
 
 Developer Tests
 ===============
