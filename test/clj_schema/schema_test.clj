@@ -74,3 +74,10 @@
                                           [:c] pos?
                                           (optional-path [:a]) Integer]))))
 
+
+(deftest test-scaffold-schema
+  (is (= '(defschema foo
+            [[:a] Anything
+             [:b :c] Anything])
+         (scaffold-schema "foo" {:a 1234
+                                 :b {:c "asdf"}}))))

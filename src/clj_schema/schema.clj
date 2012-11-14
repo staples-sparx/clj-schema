@@ -203,3 +203,14 @@
   [the-ns]
   (filter schema? (vals (ns-interns the-ns))))
 
+
+;;;; Scaffolding
+
+(defn scaffold-schema
+  "Makes a simple scaffolding schema from a given map m.
+   Each path has a validator of Anything."
+  [schema-name m]
+  (list 'defschema (symbol schema-name)
+        (vec (interleave (sort (u/paths m))
+                         (repeat 'Anything)))))
+
