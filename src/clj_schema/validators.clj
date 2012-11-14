@@ -5,8 +5,7 @@
   (:import clojure.lang.Keyword))
 
 
-;; All of these validators are using Pascal case to indicate there
-;; is a Class object associated with them
+(def Anything (constantly true))
 
 (def FloatingPoint      [:or Float Double])
 (def Integral           [:or Long Integer])
