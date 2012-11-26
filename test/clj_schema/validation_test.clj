@@ -218,20 +218,10 @@
        #{"Path [:b :car] was not specified in the schema."
          "Path [:a :house] was not specified in the schema."}
 
-;;;; validator *not* marked as 'sequence-of' but value is sequential - causes an error
-       [[:a] person-schema]
-       {:a [{:name {:first "Roberto"} :height "76"}]}
-       #{"Map value [{:name {:first \"Roberto\"}, :height \"76\"}], at path [:a], was sequential but not tagged with 'sequence-of'."}
-
 ;;;; marked as 'sequence-of' but only one value - causes an error
        [[:a] (sequence-of person-schema)]
        {:a {:name {:first "Roberto"} :height "76"}}
        #{"Map value {:name {:first \"Roberto\"}, :height \"76\"}, at path [:a], was not sequential but was tagged with 'sequence-of'."}
-
-;;;; validator *not* marked as 'sequence-of' but value is sequential - causes an error
-       [[:a] integer?]
-       {:a [1 2 3]}
-       #{"Map value [1 2 3], at path [:a], was sequential but not tagged with 'sequence-of'."}
 
 ;;;; using 'sequence-of' with an 'Number' predicate - means there is a seq of numbers
        [[:a] (sequence-of Number)]
@@ -253,21 +243,10 @@
        {:a [4 5 6 7]}
        #{}
 
-
-;;;; validator *not* marked as 'set-of' but value is set? - causes an error
-       [[:a] person-schema]
-       {:a #{{:name {:first "Roberto"} :height "76"}}}
-       #{"Map value #{{:name {:first \"Roberto\"}, :height \"76\"}}, at path [:a], was a set but not tagged with 'set-of'."}
-
 ;;;; marked as 'set-of' but only one value - causes an error
        [[:a] (set-of person-schema)]
        {:a {:name {:first "Roberto"} :height "76"}}
        #{"Map value {:name {:first \"Roberto\"}, :height \"76\"}, at path [:a], was not a set but was tagged with 'set-of'."}
-
-;;;; validator *not* marked as 'set-of' but value is set? - causes an error
-       [[:a] integer?]
-       {:a #{1 2 3}}
-       #{"Map value #{1 2 3}, at path [:a], was a set but not tagged with 'set-of'."}
 
 ;;;; using 'set-of' with an 'Number' predicate - means there is a set of numbers
        [[:a] (set-of Number)]
@@ -429,6 +408,17 @@
         :data {:a "cool"
                :b "dude"}}
        #{"Path [:data :b] was not specified in the schema."}
+
+
+       ;; [Issue #1] - Can AND a sequential with a single item validator
+       [[:a] [empty? (sequence-of String)]]
+       {:a []}
+       #{}
+
+       ;; [Issue #1] - continued...
+       [[:a] [empty? (sequence-of String)]]
+       {:a ["Roberto"]}
+       #{"Map value [\"Roberto\"], at path [:a], did not match predicate 'empty?'."}
        ))
 
     (deftest test-valid?

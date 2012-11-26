@@ -17,10 +17,8 @@
   (non-map-error [this state])
   (extraneous-path-error [this state xtra-path])
   (missing-path-error [this state missing-path])
-  (sequential-val-error [this state values-at-path])
-  (not-a-set-error [_ state value-at-path])
-  (single-val-error [this state value])
-  (set-not-single-error [this state values-at-path])
+  (not-a-sequential-error [this state values-at-path])
+  (not-a-set-error [this state value-at-path])
   (predicate-fail-error [this state val-at-path pred])
   (instance-of-fail-error [this state val-at-path expected-class]))
 
@@ -35,21 +33,13 @@
   (missing-path-error [_ _ missing-path]
     (format "Map did not contain expected path %s." missing-path))
   
-  (sequential-val-error [_ {:keys [full-path]} values-at-path]
-    (format "Map value %s, at path %s, was a single value but was tagged with 'sequence-of'."
+  (not-a-sequential-error [_ {:keys [full-path]} values-at-path]
+    (format "Map value %s, at path %s, was not sequential but was tagged with 'sequence-of'."
             (pr-str values-at-path) full-path))
 
   (not-a-set-error [_ {:keys [full-path]} value-at-path]
     (format "Map value %s, at path %s, was not a set but was tagged with 'set-of'."
             (pr-str value-at-path) full-path))
-
-  (set-not-single-error [_ {:keys [full-path]} values-at-path]
-    (format "Map value %s, at path %s, was a set but not tagged with 'set-of'."
-            (pr-str values-at-path) full-path))
-  
-  (single-val-error [_ {:keys [full-path]} value]
-    (format "Map value %s, at path %s, was sequential but not tagged with 'sequence-of'."
-            (pr-str value) full-path))
   
   (predicate-fail-error [_ {:keys [full-path]} val-at-path pred]
     (format "Map value %s, at path %s, did not match predicate '%s'."
@@ -89,40 +79,17 @@
 (defmulti ^{:private true} errors-for-path-content #(validator-type %3))
 
 (defmethod errors-for-path-content :schema [full-path val-at-path schema]
-  (cond (set? val-at-path)
-        [(set-not-single-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
-        
-        (sequential? val-at-path)
-        [(single-val-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
-
-        :else
-        (validation-errors *error-reporter* full-path schema val-at-path)))
+  (validation-errors *error-reporter* full-path schema val-at-path))
 
 (defmethod errors-for-path-content :class [full-path val-at-path expected-class]
-  (cond (set? val-at-path)
-        [(set-not-single-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
-        
-        (sequential? val-at-path)
-        [(single-val-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
-        
-        (not (instance? expected-class val-at-path))
-        [(instance-of-fail-error *error-reporter* (state-map-for-reporter full-path) val-at-path expected-class)]
-        
-        :else
-        []))
+  (if-not (instance? expected-class val-at-path)
+    [(instance-of-fail-error *error-reporter* (state-map-for-reporter full-path) val-at-path expected-class)]
+    []))
 
 (defmethod errors-for-path-content :predicate [full-path val-at-path pred]
-  (cond (set? val-at-path)
-        [(set-not-single-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
-
-        (sequential? val-at-path)
-        [(single-val-error *error-reporter* (state-map-for-reporter full-path) val-at-path)]
-        
-        (not ((u/fn->fn-thats-false-if-throws pred) val-at-path))  ;; keeps us safe from ClassCastExceptions, etc
-        [(predicate-fail-error *error-reporter* (state-map-for-reporter full-path) val-at-path pred)]
-        
-        :else
-        []))
+  (if-not ((u/fn->fn-thats-false-if-throws pred) val-at-path)  ;; keeps us safe from ClassCastExceptions, etc
+    [(predicate-fail-error *error-reporter* (state-map-for-reporter full-path) val-at-path pred)]
+    []))
 
 (defmethod errors-for-path-content :and-statement [full-path val-at-path validators]
   (let [error-msgs (mapcat (partial errors-for-path-content full-path val-at-path) validators)]
@@ -141,7 +108,7 @@
 (defmethod errors-for-path-content :sequence [full-path values-at-path validator]
   (if (or (nil? values-at-path) (sequential? values-at-path))
     (mapcat #(errors-for-path-content full-path % (:single-item-validator validator)) values-at-path)
-    [(sequential-val-error *error-reporter* (state-map-for-reporter full-path) values-at-path)]))
+    [(not-a-sequential-error *error-reporter* (state-map-for-reporter full-path) values-at-path)]))
 
 (defmethod errors-for-path-content :set [full-path values-at-path validator]
   (if (or (nil? values-at-path) (set? values-at-path))
