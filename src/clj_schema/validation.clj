@@ -14,7 +14,7 @@
      :full-path - the full path in a nested map structure
      :all-wildcard-paths - any path that includes a wildcard
      :schema-without-wildcard-paths - a version of the schema with wildcard paths removed"
-  (non-map-error [this state])
+  (not-a-map-error [this state])
   (extraneous-path-error [this state xtra-path])
   (missing-path-error [this state missing-path])
   (not-a-sequential-error [this state values-at-path])
@@ -24,7 +24,7 @@
 
 (deftype StringErrorReporter []
   ErrorReporter
-  (non-map-error [_ {:keys [parent-path map-under-validation]}]
+  (not-a-map-error [_ {:keys [parent-path map-under-validation]}]
     (format "At path %s, expected a map, got %s instead." parent-path (pr-str map-under-validation)))
   
   (extraneous-path-error [_ _ xtra-path]
@@ -229,7 +229,7 @@
                *all-wildcard-paths* (s/wildcard-path-set schema)
                *schema-without-wildcard-paths* (s/subtract-wildcard-paths schema)]
        (if-not (or (nil? m) (map? m))
-         #{(non-map-error error-reporter (state-map-for-reporter parent-path))}
+         #{(not-a-map-error error-reporter (state-map-for-reporter parent-path))}
          (set/union (path-content-errors) (extraneous-paths-errors))))))
 
 (defn valid?

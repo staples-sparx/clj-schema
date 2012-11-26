@@ -1,3 +1,10 @@
+To Use
+======
+
+```clj
+[org.clojars.runa/clj-schema "0.7.0"]
+```
+
 Schemas for Clojure Maps
 ========================
 
@@ -124,7 +131,7 @@ protocol, and then pass it in like this:
   ;; of the validation at the time the error was generated. Your protocol 
   ;; implementations can access any of that information for your reporting purposes.
   ;; For reference see `clj-schema.validation/state-map-for-reporter` which creates that map.
-  (non-map-error [_ {:keys [parent-path map-under-validation]}]
+  (not-a-map-error [_ {:keys [parent-path map-under-validation]}]
     {:type :non-map})
 
   (extraneous-path-error [_ {:keys [map-under-validation]} extra-path]
@@ -137,17 +144,17 @@ protocol, and then pass it in like this:
      :map map-under-validation
      :missing-path missing-path})
 
-  (sequential-val-error [_ {:keys [full-path map-under-validation]} values-at-path]
+  (not-a-sequential-error [_ {:keys [full-path map-under-validation]} values-at-path]
     {:type :sequential-val
      :map map-under-validation
      :path full-path
      :value values-at-path})
 
-  (single-val-error [_ {:keys [full-path map-under-validation]} value]
-    {:type :single-val
+  (not-a-set-error [_ {:keys [full-path map-under-validation]} values-at-path]
+    {:type :sequential-val
      :map map-under-validation
      :path full-path
-     :value value})
+     :value values-at-path})
 
   (predicate-fail-error [_ {:keys [full-path map-under-validation]} val-at-path pred]
     {:type :predicate
@@ -178,7 +185,7 @@ and to make factories for concisely creating valid fake data for tests.
 You can find this code in the clj-schema.fixtures namespace.
 
 These should probably be renamed to something less confusing. Any ideas?
-`
+
 ```clj
 (:require [clj-schema.fixtures :refer [def-fixture def-fixture-factory])
 
