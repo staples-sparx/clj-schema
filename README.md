@@ -132,7 +132,7 @@ protocol, and then pass it in like this:
   ;; implementations can access any of that information for your reporting purposes.
   ;; For reference see `clj-schema.validation/state-map-for-reporter` which creates that map.
   (not-a-map-error [_ {:keys [parent-path map-under-validation]}]
-    {:type :non-map})
+    {:type :not-a-map})
 
   (extraneous-path-error [_ {:keys [map-under-validation]} extra-path]
     {:type :extraneous-path
@@ -145,13 +145,13 @@ protocol, and then pass it in like this:
      :missing-path missing-path})
 
   (not-a-sequential-error [_ {:keys [full-path map-under-validation]} values-at-path]
-    {:type :sequential-val
+    {:type :not-a-sequence
      :map map-under-validation
      :path full-path
      :value values-at-path})
 
   (not-a-set-error [_ {:keys [full-path map-under-validation]} values-at-path]
-    {:type :sequential-val
+    {:type :not-a-set
      :map map-under-validation
      :path full-path
      :value values-at-path})
