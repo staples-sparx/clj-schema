@@ -8,6 +8,8 @@ To Use
 Schemas for Clojure Maps
 ========================
 
+*   [Getting Started](https://github.com/runa-dev/clj-schema/wiki/Getting-Started)
+
 Define validation schemas for validating maps.
 
 Schemas are any number of paths through a nested map, paired with a
