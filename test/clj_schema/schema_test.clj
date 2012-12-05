@@ -5,6 +5,12 @@
   (:import clojure.lang.Keyword))
 
 
+(deftest all-public-vars-have-docstrings
+  (is (= [] (map str (remove (comp :doc meta) (vals (ns-publics 'clj-schema.schema))))))
+  (is (= [] (map str (remove (comp :doc meta) (vals (ns-publics 'clj-schema.validation))))))
+  (is (= [] (map str (remove (comp :doc meta) (vals (ns-publics 'clj-schema.fixtures)))))))
+
+
 (deftest test-optional-path
   (testing "optional paths are recognizable as such"
     (is (= true (optional-path? (optional-path [:a])))))

@@ -52,7 +52,9 @@
 
 ;;;; Validation Schema Creation
 
-(defn schema-path-set [schema]
+(defn schema-path-set
+  "Returns the set of all pats in the schema."
+  [schema]
   (set (take-nth 2 schema)))
 
 (defn loose-schema
@@ -90,63 +92,89 @@
 
 ;; Questions asked of Schemas
 
-(defn schema? [x]
+(defn schema?
+  "Returns whether x is a schema"
+  [x]
   (boolean (::schema (meta x))))
 
-(defn strict-schema? [x]
+(defn strict-schema?
+  "Returns whether a schema is strict.  A strict schema necessitates that
+the map under-validation has all the paths listed in the schema and no extra paths" 
+  [x]
   (boolean (and (schema? x)
              (::strict-schema (meta x)))))
 
-(defn loose-schema? [x]
+(defn loose-schema?
+  "Returns whether a schema is loose.  A loose schema allows the
+map under-validation to have more keys than are specified in the schema."
+  [x]
   (and (schema? x)
        (not (::strict-schema (meta x)))))
 
-(defn schema-rows [schema]
+(defn schema-rows
+  "Returns a sequence of pairs, where the first element is the
+path and the second element is the validator"
+  [schema]
   (partition 2 schema))
 
-(defn num-schema-paths [schema]
+(defn num-schema-paths
+  "Returns the number of paths in the schema"
+  [schema]
   (count (schema-rows schema)))
 
 
 ;; Validator Modifiers
 
-;; I can't use metadata to tag things as being validators that are meant to be run against
-;; a sequential value, because Java Class objects cannot have metadata applied to them
-
 ; sequence-of
 (defrecord SequenceOfItemsValidator [single-item-validator])
 
-(defn sequence-of? [validator]
-  (= SequenceOfItemsValidator (class validator)))
-
-(defn sequence-of [single-item-validator]
+(defn sequence-of
+  "Wraps a validator to make it a validator that apply to every
+element of a sequential"
+  [single-item-validator]
   (SequenceOfItemsValidator. single-item-validator))
+
+(defn sequence-of?
+  "Returns whether a validator is a sequence-of validator."
+  [validator]
+  (= SequenceOfItemsValidator (class validator)))
 
 ; set-of
 (defrecord SetOfItemsValidator [single-item-validator])
 
-(defn set-of? [validator]
-  (= SetOfItemsValidator (class validator)))
-
-(defn set-of [single-item-validator]
+(defn set-of
+  "Wraps a validator to make it a validator that apply to every
+element of a set"
+  [single-item-validator]
   (SetOfItemsValidator. single-item-validator))
+
+(defn set-of?
+  "Returns whether a validator is a set-of validator."
+  [validator]
+  (= SetOfItemsValidator (class validator)))
 
 ; wild
 (defrecord WildcardValidator [validator])
 
-(defn wildcard-validator? [validator]
+(defn wildcard-validator?
+  "Returns whether a validator is a wilcard"
+  [validator]
   (= WildcardValidator (class validator)))
 
 (defn wild
-  "Upgrades a validator to be used within a path as a wildcard.
+  "Wraps a validator to be used within a path as a wildcard.
    Ex. [:a (wild Integer) (wild String)], matches all paths like [:a 1 \"product-1\"] or [:a 42 \"product-2\"]"
   [validator]
   (WildcardValidator. validator))
 
-(defn wildcard-path? [schema-path]
+(defn wildcard-path?
+  "Returns whether or not a path is an wildcard-path"
+  [schema-path]
   (some wildcard-validator? schema-path))
 
-(defn wildcard-path-set [schema]
+(defn wildcard-path-set
+  "Return the set of all wildcard paths in the schema"
+  [schema]
   (set/select wildcard-path? (schema-path-set schema)))
 
 
@@ -159,10 +187,14 @@
   [schema-path]
   (vary-meta schema-path assoc ::optional-path true))
 
-(defn optional-path? [schema-path]
+(defn optional-path?
+  "Returns whether or not a path is an optional-path"
+  [schema-path]
   (boolean (::optional-path (meta schema-path))))
 
-(defn optional-path-set [schema]
+(defn optional-path-set
+  "Set of all optional-paths in a schema"
+  [schema]
   (set/select optional-path? (schema-path-set schema)))
 
 

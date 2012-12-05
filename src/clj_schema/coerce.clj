@@ -27,6 +27,7 @@
 (declare coerce-types)
 
 (defmulti coerce-value
+  ""
   (fn [validator _x_]
     (cond (sch/schema? validator)      :schema
           (sequential? validator)      :and-or-or-statement

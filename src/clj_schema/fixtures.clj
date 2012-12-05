@@ -4,7 +4,10 @@
             [clojure.pprint :as pprint]))
 
 
-(defn fixture [schema fixture-map]
+(defn fixture
+  "Takes a map and a schema, if it fails validation it throws an
+exception, else returns the map untouched"
+  [schema fixture-map]
   (v/validate-and-handle fixture-map
                          schema
                          identity
@@ -12,11 +15,13 @@
                            (pprint/pprint fx-map)
                            (throw (AssertionError. (str "Schema validation failed: " error-msgs))))))
 
-(defmacro def-fixture [name schema fixture-map]
+(defmacro def-fixture
+  "Defines a var whose value is the result of calling `fixture` on the schema and map"
+  [name schema fixture-map]
   `(def ~name (fixture ~schema ~fixture-map)))
 
 (defmacro def-fixture-factory
-  "like defn, except the result of evaluating the function is checked
+  "Like defn, except the result of evaluating the function is checked
    for validity aginst the supplied schema. Supports multi-arity definitions."
   [name schema & lists-of-args+bodies]
   (let [multi-arity? (not (vector? (first lists-of-args+bodies)))]

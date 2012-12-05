@@ -14,13 +14,13 @@
      :full-path - the full path in a nested map structure
      :all-wildcard-paths - any path that includes a wildcard
      :schema-without-wildcard-paths - a version of the schema with wildcard paths removed"
-  (not-a-map-error [this state])
-  (extraneous-path-error [this state xtra-path])
-  (missing-path-error [this state missing-path])
-  (not-a-sequential-error [this state values-at-path])
-  (not-a-set-error [this state value-at-path])
-  (predicate-fail-error [this state val-at-path pred])
-  (instance-of-fail-error [this state val-at-path expected-class]))
+  (not-a-map-error [this state] "Caused by attempting to validate something that is not a map")
+  (extraneous-path-error [this state xtra-path] "Caused by finding a path that doesn't exist in the schema.  This only applies to schemas that are not loose")
+  (missing-path-error [this state missing-path] "Caused by not finding a path mentioned in the schema")
+  (not-a-sequential-error [this state values-at-path] "Caused by a value not being sequential, when that path has a `(sequence-of ...) validator`")
+  (not-a-set-error [this state value-at-path] "Caused by a value not being a set, when it that path has a `(set-of ...) validator`")
+  (predicate-fail-error [this state val-at-path pred] "Caused by a predicate validator returning false or nil")
+  (instance-of-fail-error [this state val-at-path expected-class] "Caused by the value not being the expected Class, and not being a subtype of the expected Class"))
 
 (deftype StringErrorReporter []
   ErrorReporter
@@ -233,6 +233,7 @@
          (set/union (path-content-errors) (extraneous-paths-errors))))))
 
 (defn valid?
+  "Returns true if calling `validation-errors` would return no errors"
   ([schema m]
     (valid? (StringErrorReporter.) schema m))
   ([error-reporter schema m]
