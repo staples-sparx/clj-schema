@@ -2,7 +2,7 @@ To Use
 ======
 
 ```clj
-[org.clojars.runa/clj-schema "0.7.0"]
+[org.clojars.runa/clj-schema "0.7.1"]
 ```
 
 Schemas for Clojure Maps
