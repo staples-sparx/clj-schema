@@ -77,7 +77,9 @@ You can combine more than one schema into a combined schema like this:
 ```
 
 `defschema` creates a strict schema, which expects only the paths it
-describes to be present on the given map.
+describes to be present on the given map.  Making a schema strict requires 
+a `:clj-schema.schema` true metadata on the vector of paths. `defschema`
+does that for you internally.
 
 `def-loose-schema` creates a loose schema, which expects its paths to be
 present but does not complain about extra paths
@@ -265,6 +267,12 @@ Developer Tests
 ===============
 
 Run them with `./run-tests.sh`.  This will run all unit tests in Clojure 1.2 - 1.5, ensuring this library is usable by the widest number of projects.
+
+Contributors
+============
+Alex Baranosky
+Laurent Petit
+Punit Rathore
 
 License
 =======

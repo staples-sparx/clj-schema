@@ -70,11 +70,8 @@
   "From a seq of vectors, creates a schema that can be used within other schemas.
    Any paths found in addition to the ones specified are considered a violation."
   [& vs]
-  {:pre [(even? (count (apply concat vs)))
-         (every? vector? (schema-path-set (apply concat vs)))]}
-  (let [schema-vector (vec (apply concat vs))]
-    (vary-meta schema-vector merge {::schema true
-                                    ::strict-schema true})))
+  (-> (apply loose-schema vs)
+      (vary-meta assoc ::strict-schema true)))
 
 (defmacro def-loose-schema
   "Creates a named var for a loose schema that can be used within other schemas."
@@ -86,8 +83,7 @@
   "Creates a named var for a strict schema that can be used within other schemas."
   [name & schema-vectors]
   `(-> (def ~name (strict-schema ~@schema-vectors))
-       (alter-meta! merge {::schema true
-                           ::strict-schema true})))
+       (alter-meta! assoc ::schema true ::strict-schema true)))
 
 
 ;; Questions asked of Schemas
