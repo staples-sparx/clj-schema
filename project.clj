@@ -2,6 +2,7 @@
 
 (defproject org.clojars.runa/clj-schema "0.7.2"
   :description "Map schema definitions and validation library."
+  :url "https://github.com/runa-dev/clj-schema"
   :dependencies ~(cons '[org.clojure/clojure "1.2.0"]
                          common-deps)
   :dev-dependencies [[jonase/kibit "0.0.3"]
