@@ -54,7 +54,11 @@
 
        (as-strict-schema (loose-schema [[:a] string?])) schema?
        (as-strict-schema (loose-schema [[:a] string?])) strict-schema?
-       (as-strict-schema (loose-schema [[:a] string?])) (complement loose-schema?)))
+       (as-strict-schema (loose-schema [[:a] string?])) (complement loose-schema?)
+
+       (as-loose-schema (strict-schema [[:a] string?])) schema?
+       (as-loose-schema (strict-schema [[:a] string?])) loose-schema?
+       (as-loose-schema (strict-schema [[:a] string?])) (complement strict-schema?)))
 
 (deftest test-subtract-paths
   (doseq [[schema-identifier schema-maker] [[loose-schema? loose-schema]

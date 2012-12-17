@@ -2,7 +2,7 @@ To Use
 ======
 
 ```clj
-[org.clojars.runa/clj-schema "0.7.1"]
+[org.clojars.runa/clj-schema "0.7.2"]
 ```
 
 Schemas for Clojure Maps
@@ -83,6 +83,8 @@ does that for you internally.
 
 `def-loose-schema` creates a loose schema, which expects its paths to be
 present but does not complain about extra paths
+
+Schemas can be altered to be loose or strict using `as-loose-schema` or `as-strict-schema`
 
 
 Map Validation Using Schemas

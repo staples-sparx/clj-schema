@@ -78,6 +78,12 @@
   [& vs]
   (as-strict-schema (apply loose-schema vs)))
 
+(defn as-loose-schema
+  "Removes ^{clj-schema.schema/strict-schema true} metadata from the given schema,
+   making it validate loosely"
+  [schema]
+  (vary-meta schema dissoc ::strict-schema))
+
 (defmacro def-loose-schema
   "Creates a named var for a loose schema that can be used within other schemas."
   [name & schema-vectors]
