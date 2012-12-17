@@ -66,12 +66,17 @@
   (let [schema-vector (vec (apply concat vs))]
     (vary-meta schema-vector assoc ::schema true)))
 
+(defn as-strict-schema
+  "Adds ^{clj-schema.schema/strict-schema true} metadata to the given schema,
+   making it validate strictly"
+  [schema]
+  (vary-meta schema assoc ::strict-schema true))
+
 (defn strict-schema
   "From a seq of vectors, creates a schema that can be used within other schemas.
    Any paths found in addition to the ones specified are considered a violation."
   [& vs]
-  (-> (apply loose-schema vs)
-      (vary-meta assoc ::strict-schema true)))
+  (as-strict-schema (apply loose-schema vs)))
 
 (defmacro def-loose-schema
   "Creates a named var for a loose schema that can be used within other schemas."

@@ -27,24 +27,34 @@
        nil (comp not schema?)
        nil (comp not loose-schema?)
        nil (comp not strict-schema?)
+       
        (loose-schema [[:a] string?]) schema?
        (loose-schema [[:a] string?]) loose-schema?
-       (loose-schema [[:a] string?]) (comp not strict-schema?)
+       (loose-schema [[:a] string?]) (complement strict-schema?)
+       
        loose-person-schema schema?
        loose-person-schema loose-schema?
-       loose-person-schema (comp not strict-schema?)
+       loose-person-schema (complement strict-schema?)
+       
        #'loose-person-schema schema?
        #'loose-person-schema loose-schema?
-       #'loose-person-schema (comp not strict-schema?)
+       #'loose-person-schema (complement strict-schema?)
+       
        (strict-schema [[:a] string?]) schema?
        (strict-schema [[:a] string?]) strict-schema?
-       (strict-schema [[:a] string?]) (comp not loose-schema?)
+       (strict-schema [[:a] string?]) (complement loose-schema?)
+       
        family-schema schema?
        family-schema strict-schema?
-       family-schema (comp not loose-schema?)
+       family-schema (complement loose-schema?)
+       
        #'family-schema schema?
        #'family-schema strict-schema?
-       #'family-schema (comp not loose-schema?)))
+       #'family-schema (complement loose-schema?)
+
+       (as-strict-schema (loose-schema [[:a] string?])) schema?
+       (as-strict-schema (loose-schema [[:a] string?])) strict-schema?
+       (as-strict-schema (loose-schema [[:a] string?])) (complement loose-schema?)))
 
 (deftest test-subtract-paths
   (doseq [[schema-identifier schema-maker] [[loose-schema? loose-schema]
