@@ -10,7 +10,8 @@
   :dev-dependencies [[jonase/kibit "0.0.3"]
                      [jonase/eastwood "0.0.2"]
                      [slamhound "1.3.0"]
-                     [lein-multi "1.1.0"]]
+                     [lein-multi "1.1.0"]
+                     [org.clojure/tools.trace "0.7.3"]]
   :profiles {:dev {:dependencies [[jonase/kibit "0.0.3"]
                                   [jonase/eastwood "0.0.2"]
                                   [slamhound "1.3.0"]]}}

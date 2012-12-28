@@ -10,7 +10,7 @@
   (-> x :name :first (= "Bob")))
 
 (deftest test-validation-errors
-  (are [schema m errors] (= errors (validation-errors schema m))
+  (are [schema m errors] (= errors (validation-errors (if (schema? schema) schema (strict-schema schema)) m))
 
 ;;;; Degenerate cases
 
@@ -19,7 +19,7 @@
        nil             nil         #{}
        []              nil         #{}
 
-       family-schema [1 2 3] #{"At path [], expected a map, got [1 2 3] instead."}
+       family-schema [[:a] 2 [:b] 4] #{"At path [], expected a map, got [[:a] 2 [:b] 4] instead."}
 
        ;;
 
@@ -273,8 +273,7 @@
      
 
 ;;;; nested loose schemas don't count toward strict schema's keys
-       (strict-schema
-        [[:a] loose-height-schema])
+       [[:a] loose-height-schema]
        {:a {:height 72 :extra-key-doesnt-cuase-error "foo"}
         :b "oops"}
        #{"Path [:b] was not specified in the schema."}
@@ -331,11 +330,6 @@
        ;; Wildcard paths match empty maps
        [[:a (wild string?)] String]
        {:a {}}
-       #{}
-
-       ;; extra paths on wild card paths are ok if the schema is loose
-       (loose-schema [[:a (wild string?)] String])
-       {:a {999 :boom}}
        #{}
 
        ;; don't get missing path errors for nested schemas within wildcard paths - regression test Jun 15, 2012
@@ -421,9 +415,18 @@
        #{"Map value [\"Roberto\"], at path [:a], did not match predicate 'empty?'."}
        ))
 
-    (deftest test-valid?
+       (deftest test-loose-schema-validations
+         (are [schema m errors] (= errors (validation-errors (loose-schema schema) m))
+
+           ;; extra paths on wild card paths are ok if the schema is loose
+           [[:a (wild string?)] String]
+           {:a {999 :boom}}
+             #{}
+           ))
+
+       (deftest test-valid?
       (testing "valid iff there'd be no error messages"
-        (are [schema m result] (= (valid? schema m) result)
+        (are [schema m result] (= (valid? (strict-schema schema) m) result)
 
           [[:a] number?]
           {:a 1}

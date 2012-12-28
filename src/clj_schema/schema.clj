@@ -50,84 +50,86 @@
             [clojure.set :as set]))
 
 
-;;;; Validation Schema Creation
-
-(defn schema-path-set
-  "Returns the set of all pats in the schema."
-  [schema]
-  (set (take-nth 2 schema)))
-
-(defn loose-schema
-  "From a seq of vectors, creates a schema that can be used within other schemas.
-   Checks for the presence of all paths; other paths may also exist."
-  [& vs]
-  {:pre [(even? (count (apply concat vs)))
-         (every? vector? (schema-path-set (apply concat vs)))]}
-  (let [schema-vector (vec (apply concat vs))]
-    (vary-meta schema-vector assoc ::schema true)))
-
-(defn as-strict-schema
-  "Adds ^{clj-schema.schema/strict-schema true} metadata to the given schema,
-   making it validate strictly"
-  [schema]
-  (vary-meta schema assoc ::strict-schema true))
-
-(defn strict-schema
-  "From a seq of vectors, creates a schema that can be used within other schemas.
-   Any paths found in addition to the ones specified are considered a violation."
-  [& vs]
-  (as-strict-schema (apply loose-schema vs)))
-
-(defn as-loose-schema
-  "Removes ^{clj-schema.schema/strict-schema true} metadata from the given schema,
-   making it validate loosely"
-  [schema]
-  (vary-meta schema dissoc ::strict-schema))
-
-(defmacro def-loose-schema
-  "Creates a named var for a loose schema that can be used within other schemas."
-  [name & schema-vectors]
-  `(-> (def ~name (loose-schema ~@schema-vectors))
-       (alter-meta! assoc ::schema true)))
-
-(defmacro defschema
-  "Creates a named var for a strict schema that can be used within other schemas."
-  [name & schema-vectors]
-  `(-> (def ~name (strict-schema ~@schema-vectors))
-       (alter-meta! assoc ::schema true ::strict-schema true)))
-
-
 ;; Questions asked of Schemas
 
 (defn schema?
   "Returns whether x is a schema"
   [x]
-  (boolean (::schema (meta x))))
+  (if (var? x)
+    (contains? (meta x) ::schema)
+    (contains? x :schema)))
 
 (defn strict-schema?
   "Returns whether a schema is strict.  A strict schema necessitates that
 the map under-validation has all the paths listed in the schema and no extra paths" 
   [x]
-  (boolean (and (schema? x)
-             (::strict-schema (meta x)))))
+  (if (var? x)
+    (and (schema? x) (::strict-schema (meta x)))
+    (and (schema? x) (:strict-schema x))))
 
 (defn loose-schema?
   "Returns whether a schema is loose.  A loose schema allows the
 map under-validation to have more keys than are specified in the schema."
   [x]
-  (and (schema? x)
-       (not (::strict-schema (meta x)))))
+  (if (var? x)
+    (and (schema? x) (not (::strict-schema (meta x))))
+    (and (schema? x) (not (:strict-schema x)))))
 
 (defn schema-rows
   "Returns a sequence of pairs, where the first element is the
 path and the second element is the validator"
   [schema]
-  (partition 2 schema))
+  (partition 2 (:schema schema)))
 
-(defn num-schema-paths
-  "Returns the number of paths in the schema"
+(defn schema-path-set
+  "Returns the set of all paths in the schema."
   [schema]
-  (count (schema-rows schema)))
+  (set (take-nth 2 (:schema schema))))
+
+
+;;;; Schema Creation
+
+(defn loose-schema
+  "From a seq of vectors, creates a schema that can be used within other schemas.
+   Checks for the presence of all paths; other paths may also exist."
+  [& constraints-and-schema-vectors]
+  (let [vs (filter vector? constraints-and-schema-vectors)
+        flattened-schemas (mapcat :schema (filter schema? constraints-and-schema-vectors))
+        vs (vec (apply concat flattened-schemas vs))]
+    (assert (even? (count vs)))
+    (assert (every? sequential? (schema-path-set {:schema vs})))
+    {:schema vs
+     :strict-schema false}))
+
+(defn as-strict-schema
+  "Adds :strict-schema true k/v pair to the given schema,
+   making it validate strictly"
+  [schema]
+  (assoc schema :strict-schema true))
+
+(defn strict-schema
+  "From a seq of maps, creates a schema that can be used within other schemas.
+   Any paths found in addition to the ones specified are considered a violation."
+  [& constraints-and-schema-vectors]
+  (as-strict-schema (apply loose-schema constraints-and-schema-vectors)))
+
+(defn as-loose-schema
+  "Removes :strict-schema true k/v pair from the given schema,
+   making it validate loosely"
+  [schema]
+  (assoc schema :strict-schema false))
+
+(defmacro def-loose-schema
+  "Creates a named var for a loose schema that can be used within other schemas."
+  [name & constraints-and-schema-vectors]
+  `(-> (def ~name (loose-schema ~@constraints-and-schema-vectors))
+       (alter-meta! assoc ::schema true)))
+
+(defmacro defschema
+  "Creates a named var for a strict schema that can be used within other schemas."
+  [name & constraints-and-schema-vectors]
+  `(-> (def ~name (strict-schema ~@constraints-and-schema-vectors))
+       (alter-meta! assoc ::schema true ::strict-schema true)))
 
 
 ;; Validator Modifiers
@@ -210,11 +212,10 @@ element of a set"
 (defn filter-schema
   "Takes a pred like (fn [[path validator]] ...) and selects all schema rows that match."
   [pred schema]
-  (let [new-schema (->> (schema-rows schema)
-                        (filter pred)
-                        (apply concat)
-                        vec)]
-    (with-meta new-schema (meta schema))))
+  (assoc schema :schema (->> (schema-rows schema)
+                             (filter pred)
+                             (apply concat)
+                             vec)))
 
 (defn subtract-paths
   "Returns a new schema minus some paths."

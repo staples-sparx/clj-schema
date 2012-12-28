@@ -10,6 +10,58 @@
   (is (= [] (map str (remove (comp :doc meta) (vals (ns-publics 'clj-schema.validation))))))
   (is (= [] (map str (remove (comp :doc meta) (vals (ns-publics 'clj-schema.fixtures)))))))
 
+(deftest test-loose-schema-and-as-strict-schmema
+  (let [loose (loose-schema  [[:a] even?]
+                             [[:b] String
+                              [:a] Number])]
+    (is (= {:schema [[:a] even?
+                     [:b] String
+                     [:a] Number]
+            :strict-schema false}) loose)
+    (is (= {:schema [[:a] even?
+                     [:b] String
+                     [:a] Number]
+            :strict-schema true}
+           (as-strict-schema loose)))))
+
+(deftest test-strict-schema-and-as-loose-schema
+  (let [strict (strict-schema  [[:a] even?]
+                               [[:b] String
+                                [:a] Number])]
+    (is (= {:schema [[:a] even?
+                     [:b] String
+                     [:a] Number]
+            :strict-schema true}) strict)
+    (is (= {:schema [[:a] even?
+                     [:b] String
+                     [:a] Number]
+            :strict-schema false}
+           (as-loose-schema strict)))))
+
+(deftest test-def-loose-schema
+  (is (= {:schema [[:name :first] java.lang.String
+                   [:height] java.lang.Number]
+          :strict-schema false}
+         loose-person-schema)))
+
+(deftest test-defschema
+  (is (= {:schema [[:name :first] java.lang.String [:height] java.lang.Number], :strict-schema true}
+         person-schema)))
+
+(deftest test-schema-path-set
+  (is (= #{[:mom] [:dad]} (schema-path-set family-schema))))
+
+(deftest test-schema-rows
+  (is (= [[[:name :first] java.lang.String]
+          [[:height] java.lang.Number]]
+         (schema-rows loose-person-schema)))
+  (is (= [[[:mom] {:schema [[:name :first] java.lang.String
+                            [:height] java.lang.Number]
+                   :strict-schema true}]
+          [[:dad] {:schema [[:name :first] java.lang.String
+                            [:height] java.lang.Number]
+                   :strict-schema true}]]
+         (schema-rows family-schema))))
 
 (deftest test-optional-path
   (testing "optional paths are recognizable as such"
@@ -77,22 +129,14 @@
 (deftest test-schema-construction-preconditions
    (are [schema-maker args] (thrown? AssertionError (schema-maker args))
         loose-schema [[:a] string? [:b string?]]
-        strict-schema [[:a] string? [:b string?]]
-        loose-schema ['(:a) string?]
-        strict-schema ['(:a) string?]))
-
- (deftest test-num-schema-paths
-   (are [schema n] (= (num-schema-paths schema) n)
-        family-schema 2
-        []  0
-        nil 0))
+        strict-schema [[:a] string? [:b string?]]))
 
 (deftest test-optional-path-set
-  (is (= #{} (optional-path-set [])))
-  (is (= #{} (optional-path-set [[:a] String])))
-  (is (= #{[:a] [:b]} (optional-path-set [(optional-path [:b]) String
-                                          [:c] pos?
-                                          (optional-path [:a]) Integer]))))
+  (is (= #{} (optional-path-set (strict-schema []))))
+  (is (= #{} (optional-path-set (strict-schema [[:a] String]))))
+  (is (= #{[:a] [:b]} (optional-path-set (strict-schema [(optional-path [:b]) String
+                                                         [:c] pos?
+                                                         (optional-path [:a]) Integer])))))
 
 (deftest test-scaffold-schema
   (is (= '(defschema foo
