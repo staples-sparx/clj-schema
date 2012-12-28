@@ -17,11 +17,11 @@
     (is (= {:schema [[:a] even?
                      [:b] String
                      [:a] Number]
-            :strict-schema false}) loose)
+            :strict false}) loose)
     (is (= {:schema [[:a] even?
                      [:b] String
                      [:a] Number]
-            :strict-schema true}
+            :strict true}
            (as-strict-schema loose)))))
 
 (deftest test-strict-schema-and-as-loose-schema
@@ -31,21 +31,22 @@
     (is (= {:schema [[:a] even?
                      [:b] String
                      [:a] Number]
-            :strict-schema true}) strict)
+            :strict true}) strict)
     (is (= {:schema [[:a] even?
                      [:b] String
                      [:a] Number]
-            :strict-schema false}
+            :strict false}
            (as-loose-schema strict)))))
 
 (deftest test-def-loose-schema
   (is (= {:schema [[:name :first] java.lang.String
                    [:height] java.lang.Number]
-          :strict-schema false}
+          :strict false}
          loose-person-schema)))
 
 (deftest test-defschema
-  (is (= {:schema [[:name :first] java.lang.String [:height] java.lang.Number], :strict-schema true}
+  (is (= {:schema [[:name :first] java.lang.String [:height] java.lang.Number]
+          :strict true}
          person-schema)))
 
 (deftest test-schema-path-set
@@ -57,10 +58,10 @@
          (schema-rows loose-person-schema)))
   (is (= [[[:mom] {:schema [[:name :first] java.lang.String
                             [:height] java.lang.Number]
-                   :strict-schema true}]
+                   :strict true}]
           [[:dad] {:schema [[:name :first] java.lang.String
                             [:height] java.lang.Number]
-                   :strict-schema true}]]
+                   :strict true}]]
          (schema-rows family-schema))))
 
 (deftest test-optional-path

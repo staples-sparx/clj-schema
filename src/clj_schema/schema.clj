@@ -64,16 +64,16 @@
 the map under-validation has all the paths listed in the schema and no extra paths" 
   [x]
   (if (var? x)
-    (and (schema? x) (::strict-schema (meta x)))
-    (and (schema? x) (:strict-schema x))))
+    (and (schema? x) (::strict (meta x)))
+    (and (schema? x) (:strict x))))
 
 (defn loose-schema?
   "Returns whether a schema is loose.  A loose schema allows the
 map under-validation to have more keys than are specified in the schema."
   [x]
   (if (var? x)
-    (and (schema? x) (not (::strict-schema (meta x))))
-    (and (schema? x) (not (:strict-schema x)))))
+    (and (schema? x) (not (::strict (meta x))))
+    (and (schema? x) (not (:strict x)))))
 
 (defn schema-rows
   "Returns a sequence of pairs, where the first element is the
@@ -99,13 +99,13 @@ path and the second element is the validator"
     (assert (even? (count vs)))
     (assert (every? sequential? (schema-path-set {:schema vs})))
     {:schema vs
-     :strict-schema false}))
+     :strict false}))
 
 (defn as-strict-schema
   "Adds :strict-schema true k/v pair to the given schema,
    making it validate strictly"
   [schema]
-  (assoc schema :strict-schema true))
+  (assoc schema :strict true))
 
 (defn strict-schema
   "From a seq of maps, creates a schema that can be used within other schemas.
@@ -117,7 +117,7 @@ path and the second element is the validator"
   "Removes :strict-schema true k/v pair from the given schema,
    making it validate loosely"
   [schema]
-  (assoc schema :strict-schema false))
+  (assoc schema :strict false))
 
 (defmacro def-loose-schema
   "Creates a named var for a loose schema that can be used within other schemas."
@@ -129,7 +129,7 @@ path and the second element is the validator"
   "Creates a named var for a strict schema that can be used within other schemas."
   [name & constraints-and-schema-vectors]
   `(-> (def ~name (strict-schema ~@constraints-and-schema-vectors))
-       (alter-meta! assoc ::schema true ::strict-schema true)))
+       (alter-meta! assoc ::schema true ::strict true)))
 
 
 ;; Validator Modifiers
