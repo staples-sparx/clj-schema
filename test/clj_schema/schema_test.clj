@@ -10,6 +10,9 @@
   (is (= [] (map str (remove (comp :doc meta) (vals (ns-publics 'clj-schema.validation))))))
   (is (= [] (map str (remove (comp :doc meta) (vals (ns-publics 'clj-schema.fixtures)))))))
 
+
+;;; Creation
+
 (deftest test-loose-schema-and-as-strict-schmema
   (let [loose (loose-schema  [[:a] even?]
                              [[:b] String
@@ -17,10 +20,12 @@
     (is (= {:schema [[:a] even?
                      [:b] String
                      [:a] Number]
+            :constraints []
             :strict false}) loose)
     (is (= {:schema [[:a] even?
                      [:b] String
                      [:a] Number]
+            :constraints []
             :strict true}
            (as-strict-schema loose)))))
 
@@ -31,23 +36,45 @@
     (is (= {:schema [[:a] even?
                      [:b] String
                      [:a] Number]
+            :constraints []
             :strict true}) strict)
     (is (= {:schema [[:a] even?
                      [:b] String
                      [:a] Number]
+            :constraints []
             :strict false}
            (as-loose-schema strict)))))
 
 (deftest test-def-loose-schema
   (is (= {:schema [[:name :first] java.lang.String
                    [:height] java.lang.Number]
+          :constraints []
           :strict false}
          loose-person-schema)))
 
 (deftest test-defschema
   (is (= {:schema [[:name :first] java.lang.String [:height] java.lang.Number]
+          :constraints []
           :strict true}
          person-schema)))
+
+(deftest test-constraints
+  (is (= [{:predicate first
+           :source 'first}
+          {:predicate second
+           :source 'second}]
+         (constraints first
+                      second))))
+
+(deftest test-schemas-with-constraints
+  (is (= 3 (count (keys schema-with-constraints))))
+  (is (= [[:a] java.lang.String [:b] java.lang.Number] (:schema schema-with-constraints)))
+  (is (= false (:strict schema-with-constraints)))
+  (is (= 2 (count (:constraints schema-with-constraints))))
+  (is (every? constraint? (:constraints schema-with-constraints))))
+
+
+;;; Questions
 
 (deftest test-schema-path-set
   (is (= #{[:mom] [:dad]} (schema-path-set family-schema))))
@@ -58,9 +85,11 @@
          (schema-rows loose-person-schema)))
   (is (= [[[:mom] {:schema [[:name :first] java.lang.String
                             [:height] java.lang.Number]
+                   :constraints []
                    :strict true}]
           [[:dad] {:schema [[:name :first] java.lang.String
                             [:height] java.lang.Number]
+                   :constraints []
                    :strict true}]]
          (schema-rows family-schema))))
 

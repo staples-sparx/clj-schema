@@ -23,3 +23,9 @@
 (defschema mom-strict-dad-loose-family-schema
   [[:mom] person-schema
    [:dad] loose-person-schema])
+
+(def-loose-schema schema-with-constraints
+  (constraints (comp even? count distinct vals)
+               (fn [m] (even? (count (keys m)))))
+  [[:a] String
+   [:b] Number])

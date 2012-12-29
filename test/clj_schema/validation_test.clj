@@ -413,7 +413,15 @@
        [[:a] [empty? (sequence-of String)]]
        {:a ["Roberto"]}
        #{"Map value [\"Roberto\"], at path [:a], did not match predicate 'empty?'."}
+       
        ))
+
+(deftest test-schemas-can-check-constraints-against-entire-map
+  (is (= #{"At path [], constraint failed. Expected '((fn [m] (even? (count (keys m)))) {:a \"string\", :b 99, :extra 47})' to be true, but was false."
+           "At path [], constraint failed. Expected '((comp even? count distinct vals) {:a \"string\", :b 99, :extra 47})' to be true, but was false."}
+         (validation-errors schema-with-constraints {:a "string"
+                                                     :b 99
+                                                     :extra 47}))))
 
        (deftest test-loose-schema-validations
          (are [schema m errors] (= errors (validation-errors (loose-schema schema) m))

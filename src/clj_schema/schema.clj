@@ -86,6 +86,17 @@ path and the second element is the validator"
   [schema]
   (set (take-nth 2 (:schema schema))))
 
+(defn constraint?
+  "Returns whether x is a constraint."
+  [x]
+  (and (map? x)
+       (= #{:predicate :source} (set (keys x)))))
+
+(defn constraints?
+  "Returns whether x is a seq of only constraints."
+  [x]
+  (every? constraint? x))
+
 
 ;;;; Schema Creation
 
@@ -93,12 +104,15 @@ path and the second element is the validator"
   "From a seq of vectors, creates a schema that can be used within other schemas.
    Checks for the presence of all paths; other paths may also exist."
   [& constraints-and-schema-vectors]
-  (let [vs (filter vector? constraints-and-schema-vectors)
-        flattened-schemas (mapcat :schema (filter schema? constraints-and-schema-vectors))
-        vs (vec (apply concat flattened-schemas vs))]
+  (let [flattened-schemas (mapcat :schema (filter schema? constraints-and-schema-vectors))
+        vs1 (remove #(or (constraints? %)
+                         (schema? %)) constraints-and-schema-vectors)
+       
+        vs (vec (apply concat flattened-schemas vs1))]
     (assert (even? (count vs)))
     (assert (every? sequential? (schema-path-set {:schema vs})))
     {:schema vs
+     :constraints (apply concat (filter constraints? constraints-and-schema-vectors))
      :strict false}))
 
 (defn as-strict-schema
@@ -118,6 +132,14 @@ path and the second element is the validator"
    making it validate loosely"
   [schema]
   (assoc schema :strict false))
+
+(defmacro constraints
+  "Wrap a group of predicates, so that they can be tested against
+   the entire map."
+  [& pred-sexps]
+  (vec (for [ps pred-sexps]
+         `{:predicate ~ps 
+           :source '~ps})))
 
 (defmacro def-loose-schema
   "Creates a named var for a loose schema that can be used within other schemas."
