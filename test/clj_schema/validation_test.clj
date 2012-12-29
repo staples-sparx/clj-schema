@@ -10,7 +10,7 @@
   (-> x :name :first (= "Bob")))
 
 (deftest test-validation-errors
-  (are [schema m errors] (= errors (validation-errors (if (schema? schema) schema (strict-schema schema)) m))
+  (are [schema m errors] (= errors (validation-errors (if (schema? schema) schema (map-schema :strict schema)) m))
 
 ;;;; Degenerate cases
 
@@ -306,7 +306,7 @@
        #{"Value :b at path [:a :x \"b\"] expected class java.lang.String, but was clojure.lang.Keyword"}
 
        ;; if a path exists that doesn't match the wildcard, it is considered an extraneous path
-       [[:a] (strict-schema [[(wild Keyword)] String])]
+       [[:a] (map-schema :strict [[(wild Keyword)] String])]
        {:a {"b" "foo" "c" "bar"}}
        #{"Path [:a \"c\"] was not specified in the schema."
          "Path [:a \"b\"] was not specified in the schema."}
@@ -343,7 +343,7 @@
        #{}
 
        ;; won't confuse them in nested paths either
-       [["Sneetch" :unit-price-cents] (strict-schema [[:a] string?])]
+       [["Sneetch" :unit-price-cents] (map-schema :strict [[:a] string?])]
        {"Sneetch" {:unit-price-cents {:a "a"}}}
        #{}
 
@@ -371,12 +371,12 @@
        #{"Path [:a] was not specified in the schema."}
 
        ;; can't have empty maps at wilcard paths, they don't count
-       [[:a :b] (strict-schema [[(wild String)] Number])]
+       [[:a :b] (map-schema :strict [[(wild String)] Number])]
        {:a {}}
        #{"Map did not contain expected path [:a :b]."}
 
        ;; ... <continued>
-       [[:a :b] (strict-schema [[:banana-count] Number
+       [[:a :b] (map-schema :strict [[:banana-count] Number
                                 [(wild String)] Number])]
        {:a {}}
        #{"Map did not contain expected path [:a :b]."}
@@ -429,7 +429,7 @@
                                                          :b 99}))))
 
        (deftest test-loose-schema-validations
-         (are [schema m errors] (= errors (validation-errors (loose-schema schema) m))
+         (are [schema m errors] (= errors (validation-errors (map-schema :loose schema) m))
 
            ;; extra paths on wild card paths are ok if the schema is loose
            [[:a (wild string?)] String]
@@ -439,7 +439,7 @@
 
        (deftest test-valid?
       (testing "valid iff there'd be no error messages"
-        (are [schema m result] (= (valid? (strict-schema schema) m) result)
+        (are [schema m result] (= (valid? (map-schema :strict schema) m) result)
 
           [[:a] number?]
           {:a 1}

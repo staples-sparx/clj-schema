@@ -130,9 +130,9 @@ path and the second element is the validator"
 (def ^{:doc "Constraints common to all set schemas"}
   set-constraints (constraints (fn [m] (or (nil? m) (set? m)))))
 
-(defn loose-schema
+(defn map-schema
   "TODO"
-  [& constraints-and-schema-vectors]
+  [looseness & constraints-and-schema-vectors]
   (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-vectors))
         flattened-schemas (mapcat :schema-spec (filter schema? constraints-and-schema-vectors))
         schema-spec? (fn [x] (and (vector? x) (not (constraints? x))))
@@ -143,12 +143,7 @@ path and the second element is the validator"
     {:type :map
      :schema-spec flattened-schema-specs
      :constraints (concat map-constraints user-specified-constraints)
-     :strict false}))
-
-(defn strict-schema
-  "TODO"
-  [& constraints-and-schema-vectors]
-  (as-strict-schema (apply loose-schema constraints-and-schema-vectors)))
+     :strict (= :strict looseness)}))
 
 (defmacro def-map-schema
   "Creates a named var for a strict schema TODO"
@@ -158,15 +153,13 @@ path and the second element is the validator"
   (let [[looseness name & constraints-and-schema-vectors] (if (keyword? (first args))
                                                             args
                                                             (cons :strict args))
-        _ (assert (contains? #{:strict :loose} looseness))
-        schema-maker (if (= :strict looseness) strict-schema loose-schema)]
-    `(-> (def ~name (~schema-maker ~@constraints-and-schema-vectors))
+        _ (assert (contains? #{:strict :loose} looseness))]
+    `(-> (def ~name (map-schema ~looseness ~@constraints-and-schema-vectors))
          (alter-meta! assoc ::schema true ::strict ~(= :strict looseness)))))
 
 (defn seq-schema
   "TODO"
   [& constraints-and-schema-specs]
-  (println "SEQ SCHEMA::" constraints-and-schema-specs)
   (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-specs))
         validator (first (remove constraints? constraints-and-schema-specs))]
     ;; TODO: unit test in some validations of these args
@@ -182,7 +175,6 @@ path and the second element is the validator"
 (defn set-schema
   "TODO"
   [& constraints-and-schema-specs]
-  (println "SET SCHEMA::" constraints-and-schema-specs)
   (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-specs))
         validator (first (remove constraints? constraints-and-schema-specs))]
     ;; TODO: unit test in some validations of these args
