@@ -7,12 +7,13 @@
 (def-map-schema count-schema [[:count] Number])
 (def-map-schema product-schema [[:quantity] Number
                            [:price]    Number])
-(def-loose-schema loose-height-schema [[:height] Number])
+(def-map-schema :loose loose-height-schema
+  [[:height] Number])
 (def-map-schema person-schema
   name-schema
   height-schema)
 
-(def-loose-schema loose-person-schema
+(def-map-schema :loose loose-person-schema
   [[:name :first] String
    [:height] Number])
 
@@ -24,7 +25,7 @@
   [[:mom] person-schema
    [:dad] loose-person-schema])
 
-(def-loose-schema schema-with-constraints
+(def-map-schema :loose schema-with-constraints
   (constraints (comp even? count distinct vals)
                (fn [m] (even? (count (keys m)))))
   [[:a] String

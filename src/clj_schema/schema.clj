@@ -142,17 +142,18 @@ path and the second element is the validator"
   [& constraints-and-schema-vectors]
   (as-strict-schema (apply loose-schema constraints-and-schema-vectors)))
 
-(defmacro def-loose-schema
-  "Creates a named var for a loose schema TODO"
-  [name & constraints-and-schema-vectors]
-  `(-> (def ~name (loose-schema ~@constraints-and-schema-vectors))
-       (alter-meta! assoc ::schema true)))
-
 (defmacro def-map-schema
   "Creates a named var for a strict schema TODO"
-  [name & constraints-and-schema-vectors]
-  `(-> (def ~name (strict-schema ~@constraints-and-schema-vectors))
-       (alter-meta! assoc ::schema true ::strict true)))
+  [& args]
+  {:arglists '([name & constraints-and-schema-vectors]
+               [looseness name & constraints-and-schema-vectors])}
+  (let [[looseness name & constraints-and-schema-vectors] (if (keyword? (first args))
+                                                            args
+                                                            (cons :strict args))
+        _ (assert (contains? #{:strict :loose} looseness))
+        schema-maker (if (= :strict looseness) strict-schema loose-schema)]
+    `(-> (def ~name (~schema-maker ~@constraints-and-schema-vectors))
+         (alter-meta! assoc ::schema true ::strict ~(= :strict looseness)))))
 
 
 ;; Validator Modifiers
