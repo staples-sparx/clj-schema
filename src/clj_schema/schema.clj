@@ -27,8 +27,8 @@
        [:x :y :z] [pred2 pred3 z-schema] ;; implicit 'and' - all three must pass
        [:p :q :r] [:or nil? r-schema]    ;; an 'or' statement - need just one to pass
        (optional-path [:z]) (sequence-of string?)
-       [:a b :d] (loose-valdiation-schema [[:cat :name] String ;; can use Java Class objects directly
-                                           [:cat :colors] (set-of String)])
+       [:a b :d] (map-schema :loose [[:cat :name] String ;; can use Java Class objects directly
+                                     [:cat :colors] (set-of String)])
       ... ]
 
      Example schema w/ wildcard paths:
@@ -43,7 +43,7 @@
       `def-map-schema` creates a strict schema, which expects only the paths it
       describes to be present on the given map.
 
-      `def-loose-schema` creates a loose schema, which expects its paths to
+      `(def-map-schema :loose [[:a] String])` creates a loose schema, which expects its paths to
       be present but does not complain about extra paths."}
   clj-schema.schema
   (:require [clj-schema.internal.utils :as u]
@@ -131,7 +131,9 @@ path and the second element is the validator"
   set-constraints (constraints (fn [m] (or (nil? m) (set? m)))))
 
 (defn map-schema
-  "TODO"
+  "Creates a schema for a map. looseness is either :loose or :strict. If :strict
+   then, any keys not mentioned in the schema-spec will be errors.
+   Accepts constraints that are applied to the whole map."
   [looseness & constraints-and-schema-vectors]
   (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-vectors))
         flattened-schemas (mapcat :schema-spec (filter schema? constraints-and-schema-vectors))
@@ -146,7 +148,8 @@ path and the second element is the validator"
      :strict (= :strict looseness)}))
 
 (defmacro def-map-schema
-  "Creates a named var for a strict schema TODO"
+  "Creates a named var for a map-schema, defaults to being strict.  Can also be
+   made loose by passing in :loose as the first parameter.  See `map-schema` for more details."
   [& args]
   {:arglists '([name & constraints-and-schema-vectors]
                [looseness name & constraints-and-schema-vectors])}
@@ -158,32 +161,34 @@ path and the second element is the validator"
          (alter-meta! assoc ::schema true ::strict ~(= :strict looseness)))))
 
 (defn seq-schema
-  "TODO"
+  "Creates a schema for a sequence. Every element of the sequence should match
+   the given validator.
+   Accepts constraints that are applied to the whole sequence."
   [& constraints-and-schema-specs]
   (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-specs))
         validator (first (remove constraints? constraints-and-schema-specs))]
-    ;; TODO: unit test in some validations of these args
     {:type :seq
      :schema-spec validator
      :constraints (concat seq-constraints user-specified-constraints)}))
 
 (defmacro def-seq-schema
-  "TODO"
+  "Creates a named var for a seq-schema. See `seq-schema` for more details."
   [name & constraints-and-schema-specs]
   `(def ~name (seq-schema ~@constraints-and-schema-specs)))
 
 (defn set-schema
-  "TODO"
+  "Creates a schema for a set. Every element of the set should match
+   the given validator.
+   Accepts constraints that are applied to the whole sequence."
   [& constraints-and-schema-specs]
   (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-specs))
         validator (first (remove constraints? constraints-and-schema-specs))]
-    ;; TODO: unit test in some validations of these args
     {:type :set
      :schema-spec validator
      :constraints (concat set-constraints user-specified-constraints)}))
 
 (defmacro def-set-schema
-  "TODO"
+  "Creates a named var for a set-schema. See `set-schema` for more details."
   [name & constraints-and-schema-specs]
   `(def ~name (set-schema ~@constraints-and-schema-specs)))
 
