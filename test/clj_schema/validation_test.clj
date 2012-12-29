@@ -19,7 +19,7 @@
        nil             nil         #{}
        []              nil         #{}
 
-       family-schema [[:a] 2 [:b] 4] #{"At path [], expected a map, got [[:a] 2 [:b] 4] instead."}
+       family-schema [[:a] 2 [:b] 4] #{"At path [], constraint failed. Expected '((fn [m] (or (nil? m) (map? m))) [[:a] 2 [:b] 4])' to be true, but was false."}
 
        ;;
 
@@ -421,7 +421,10 @@
            "At path [], constraint failed. Expected '((comp even? count distinct vals) {:a \"string\", :b 99, :extra 47})' to be true, but was false."}
          (validation-errors schema-with-constraints {:a "string"
                                                      :b 99
-                                                     :extra 47}))))
+                                                     :extra 47})))
+
+  (is (= #{} (validation-errors schema-with-constraints {:a "string"
+                                                         :b 99}))))
 
        (deftest test-loose-schema-validations
          (are [schema m errors] (= errors (validation-errors (loose-schema schema) m))

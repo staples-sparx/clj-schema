@@ -100,20 +100,11 @@ path and the second element is the validator"
 
 ;;;; Schema Creation
 
-(defn loose-schema
-  "From a seq of vectors, creates a schema that can be used within other schemas.
-   Checks for the presence of all paths; other paths may also exist."
-  [& constraints-and-schema-vectors]
-  (let [flattened-schemas (mapcat :schema-spec (filter schema? constraints-and-schema-vectors))
-        vs1 (remove #(or (constraints? %)
-                         (schema? %)) constraints-and-schema-vectors)
-       
-        vs (vec (apply concat flattened-schemas vs1))]
-    (assert (even? (count vs)))
-    (assert (every? sequential? (schema-path-set {:schema-spec vs})))
-    {:schema-spec vs
-     :constraints (apply concat (filter constraints? constraints-and-schema-vectors))
-     :strict false}))
+(defn as-loose-schema
+  "Removes :strict-schema true k/v pair from the given schema,
+   making it validate loosely"
+  [schema]
+  (assoc schema :strict false))
 
 (defn as-strict-schema
   "Adds :strict-schema true k/v pair to the given schema,
@@ -121,34 +112,44 @@ path and the second element is the validator"
   [schema]
   (assoc schema :strict true))
 
-(defn strict-schema
-  "From a seq of maps, creates a schema that can be used within other schemas.
-   Any paths found in addition to the ones specified are considered a violation."
-  [& constraints-and-schema-vectors]
-  (as-strict-schema (apply loose-schema constraints-and-schema-vectors)))
-
-(defn as-loose-schema
-  "Removes :strict-schema true k/v pair from the given schema,
-   making it validate loosely"
-  [schema]
-  (assoc schema :strict false))
-
 (defmacro constraints
   "Wrap a group of predicates, so that they can be tested against
    the entire map."
   [& pred-sexps]
   (vec (for [ps pred-sexps]
-         `{:predicate ~ps 
+         `{:predicate ~ps
            :source '~ps})))
 
+(def ^{:doc "Constraints common to all map schemas"}
+  map-constraints (constraints (fn [m] (or (nil? m) (map? m)))))
+
+(defn loose-schema
+  "TODO"
+  [& constraints-and-schema-vectors]
+  (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-vectors))
+        flattened-schemas (mapcat :schema-spec (filter schema? constraints-and-schema-vectors))
+        schema-spec? (fn [x] (and (vector? x) (not (constraints? x))))
+        schema-specs (apply concat (filter schema-spec? constraints-and-schema-vectors))
+        flattened-schema-specs (vec (concat flattened-schemas schema-specs))]
+    (assert (even? (count schema-specs)))
+    (assert (every? sequential? (schema-path-set {:schema-spec schema-specs})))
+    {:schema-spec flattened-schema-specs
+     :constraints (concat map-constraints user-specified-constraints)
+     :strict false}))
+
+(defn strict-schema
+  "TODO"
+  [& constraints-and-schema-vectors]
+  (as-strict-schema (apply loose-schema constraints-and-schema-vectors)))
+
 (defmacro def-loose-schema
-  "Creates a named var for a loose schema that can be used within other schemas."
+  "Creates a named var for a loose schema TODO"
   [name & constraints-and-schema-vectors]
   `(-> (def ~name (loose-schema ~@constraints-and-schema-vectors))
        (alter-meta! assoc ::schema true)))
 
 (defmacro defschema
-  "Creates a named var for a strict schema that can be used within other schemas."
+  "Creates a named var for a strict schema TODO"
   [name & constraints-and-schema-vectors]
   `(-> (def ~name (strict-schema ~@constraints-and-schema-vectors))
        (alter-meta! assoc ::schema true ::strict true)))

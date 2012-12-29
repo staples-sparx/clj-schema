@@ -14,7 +14,6 @@
      :full-path - the full path in a nested map structure
      :all-wildcard-paths - any path that includes a wildcard
      :schema-without-wildcard-paths - a version of the schema with wildcard paths removed"
-  (not-a-map-error [this state] "Caused by attempting to validate something that is not a map")
   (constraint-error [this state constraint] "Caused by a constraint predicate failing against the entire map")
   (extraneous-path-error [this state xtra-path] "Caused by finding a path that doesn't exist in the schema.  This only applies to schemas that are not loose")
   (missing-path-error [this state missing-path] "Caused by not finding a path mentioned in the schema")
@@ -25,9 +24,6 @@
 
 (deftype StringErrorReporter []
   ErrorReporter
-  (not-a-map-error [_ {:keys [parent-path map-under-validation]}]
-    (format "At path %s, expected a map, got %s instead." parent-path (pr-str map-under-validation)))
-
   (constraint-error [_ {:keys [parent-path map-under-validation]} constraint]
     (format "At path %s, constraint failed. Expected '(%s %s)' to be true, but was false."
             parent-path (:source constraint) (pr-str map-under-validation)))
@@ -218,7 +214,7 @@
 
 (defn- constraint-errors []
   (set (for [c (:constraints *schema*)
-             :when #(not ((:predicate c) *map-under-validation*))]
+             :when (not ((:predicate c) *map-under-validation*))]
          (constraint-error *error-reporter* (state-map-for-reporter []) c))))
 
 (defn validation-errors
@@ -238,10 +234,9 @@
                *parent-path* parent-path
                *all-wildcard-paths* (s/wildcard-path-set schema)
                *schema-without-wildcard-paths* (s/subtract-wildcard-paths schema)]
-       (if-not (or (nil? m) (map? m))
-         #{(not-a-map-error error-reporter (state-map-for-reporter parent-path))}
-         (set/union (constraint-errors)
-                    (path-content-errors)
+       (if-let [c-errors (seq (constraint-errors))]
+         (set c-errors)
+         (set/union (path-content-errors)
                     (extraneous-paths-errors))))))
 
 (defn valid?
