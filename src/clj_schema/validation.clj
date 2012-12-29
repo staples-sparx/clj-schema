@@ -8,7 +8,7 @@
   "Factory functions to generate each type of validation error.
 
    First arg 'state' is a map with 4 keys:
-     :map-under-validation - the map being validated
+     :data-under-validation - the map being validated
      :schema - the schema being used to validate
      :parent-path - the path if any to the current map, from a map that contained this one
      :full-path - the full path in a nested map structure
@@ -22,9 +22,9 @@
 
 (deftype StringErrorReporter []
   ErrorReporter
-  (constraint-error [_ {:keys [parent-path map-under-validation]} constraint]
+  (constraint-error [_ {:keys [parent-path data-under-validation]} constraint]
     (format "At path %s, constraint failed. Expected '(%s %s)' to be true, but was false."
-            parent-path (:source constraint) (pr-str map-under-validation)))
+            parent-path (:source constraint) (pr-str data-under-validation)))
   
   (extraneous-path-error [_ _ xtra-path]
     (format "Path %s was not specified in the schema." xtra-path))
@@ -42,14 +42,14 @@
 
 ;; used to hold state of one `validation-errors` calculation
 (def ^{:private true :dynamic true} *error-reporter* nil)
-(def ^{:private true :dynamic true} *map-under-validation* nil)
+(def ^{:private true :dynamic true} *data-under-validation* nil)
 (def ^{:private true :dynamic true} *schema* nil)
 (def ^{:private true :dynamic true} *parent-path* nil)
 (def ^{:private true :dynamic true} *all-wildcard-paths* nil)
 (def ^{:private true :dynamic true} *schema-without-wildcard-paths* nil)
 
 (defn- state-map-for-reporter [full-path]
-  {:map-under-validation *map-under-validation*
+  {:data-under-validation *data-under-validation*
    :schema *schema*
    :parent-path *parent-path*
    :full-path full-path
@@ -112,7 +112,7 @@
         (vec (cons k-that-matches-validator one-of-the-concrete-path-ends))))))
 
 (defn- errors-for-concrete-path [schema-path validator]
-  (let [val-at-path (get-in *map-under-validation* schema-path ::not-found)
+  (let [val-at-path (get-in *data-under-validation* schema-path ::not-found)
         contains-path? (not= ::not-found val-at-path)
         full-path (into *parent-path* schema-path)]
     (cond (and (not contains-path?) (s/optional-path? schema-path))
@@ -126,7 +126,7 @@
 
 (defn- errors-for-possibly-wildcard-path [schema-path validator]
   (if (s/wildcard-path? schema-path)
-    (let [concrete-paths (wildcard-path->concrete-paths *map-under-validation* schema-path)
+    (let [concrete-paths (wildcard-path->concrete-paths *data-under-validation* schema-path)
           ;; TODO ALex - Sep 15, 2012 - this is here because metadata lost - add abstraction to keep metadata for schemas across a translation
           concrete-paths (if (s/optional-path? schema-path) (map s/optional-path concrete-paths) concrete-paths)]
       (mapcat #(errors-for-concrete-path % validator) concrete-paths))
@@ -158,7 +158,7 @@
 
 (defn- extraneous-paths []
   (let [schema-paths (set (remove-subpaths (s/schema-path-set *schema-without-wildcard-paths*)))
-        shortened (shorten-to-schema-path-set (u/paths *map-under-validation*) schema-paths)]
+        shortened (shorten-to-schema-path-set (u/paths *data-under-validation*) schema-paths)]
     (set/difference shortened schema-paths)))
 
 (defn- covered-by-wildcard-path? [[path-first & path-rest :as path-to-check] [wildcard-first & wildcard-rest :as wildcard-path]]
@@ -191,7 +191,7 @@
 
 (defn- constraint-errors []
   (set (for [c (:constraints *schema*)
-             :when (not ((:predicate c) *map-under-validation*))]
+             :when (not ((:predicate c) *data-under-validation*))]
          (constraint-error *error-reporter* (state-map-for-reporter []) c))))
 
 
@@ -224,7 +224,7 @@
      (validation-errors error-reporter [] schema m))
   ([error-reporter parent-path schema m]
      (binding [*error-reporter* error-reporter
-               *map-under-validation* m
+               *data-under-validation* m
                *schema* schema
                *parent-path* parent-path]
        (if-let [c-errors (seq (constraint-errors))]

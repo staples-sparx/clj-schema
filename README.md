@@ -36,22 +36,22 @@ matching a given validator.
 Example Schema:
 
 ```clj
-(:require [clj-schema.schema :refer [defschema optional-path sequence-of 
-                                     loose-validation-schema set-of]])
+(:require [clj-schema.schema :refer [def-map-schema optional-path sequence-of 
+                                     map-schema set-of]])
 
-(defschema bar-schema 
+(def-map-schema bar-schema 
   [[:a :b :c] pred 
    [:x :y :z] [pred2 pred3 z-schema] ;; implicit 'and' - all three must pass 
    [:p :q :r] [:or nil? r-schema] ;; an 'or' statement - need just one to pass 
    (optional-path [:z]) (sequence-of string?) 
-   [:a b :d] (loose-valdiation-schema [[:cat :name] String ;; can use Java Class objects directly 
+   [:a b :d] (map-schema :loose [[:cat :name] String ;; can use Java Class objects directly 
    [:cat :colors] (set-of String)])]
 ```
 
 Example schema w/ wildcard paths:
 
 ```clj
-(defschema foo-schema 
+(def-map-schema foo-schema 
   [[:a (wild String) (wild Number)] String])
 
 ;; matches maps such as: 
@@ -70,21 +70,33 @@ Example schema w/ wildcard paths:
 You can combine more than one schema into a combined schema like this:
 
 ```clj
-(defschema bar-schema
+(def-map-schema bar-schema
   foo-schema
   [[:bar] String
    [:baz] #(re-matches #".*baz.*" %)])
 ```
 
-`defschema` creates a strict schema, which expects only the paths it
+Schemas are just maps:
+
+```clj
+(def-map-schema :loose foo-schema [[:a] String])
+;; foo-schema
+;; => {:type :map
+;;     :schema-spec [[:a] java.lang.String]
+;;     :constraints ({:predicate #<schema$fn__145 clj_schema.schema$fn__145@12948069>
+;;                    :source (fn [m] (or (nil? m) (map? m)))}) 
+;;     :strict false}
+```
+
+`def-map-schema` creates a strict schema by default, which expects only the paths it
 describes to be present on the given map.  Making a schema strict requires 
-a `:clj-schema.schema` true metadata on the vector of paths. `defschema`
+a `:clj-schema.schema` true metadata on the vector of paths. `def-map-schema`
 does that for you internally.
 
-`def-loose-schema` creates a loose schema, which expects its paths to be
+`(def-map-schema :loose [[:a] String])` creates a loose schema, which expects its paths to be
 present but does not complain about extra paths
 
-Schemas can be altered to be loose or strict using `as-loose-schema` or `as-strict-schema`
+Map schemas can be altered to be loose or strict using `as-loose-schema` or `as-strict-schema`
 
 
 Map Validation Using Schemas
@@ -104,7 +116,7 @@ find a variety of issues:
 *   a path's value's Class wasn't an instance of the specified Class
 
 ```clj
-(defschema person-schema
+(def-map-schema person-schema
   [[:name :first] String
    [:name :last]  String
    [:height]      Double])
@@ -137,42 +149,32 @@ protocol, and then pass it in like this:
   ;; of the validation at the time the error was generated. Your protocol 
   ;; implementations can access any of that information for your reporting purposes.
   ;; For reference see `clj-schema.validation/state-map-for-reporter` which creates that map.
-  (not-a-map-error [_ {:keys [parent-path map-under-validation]}]
-    {:type :not-a-map})
+  (constraint-error [_ {} constraint]
+    {:type :constraint-error
+     :data data-under-validation
+     :constraint constraint}) 
 
-  (extraneous-path-error [_ {:keys [map-under-validation]} extra-path]
+  (extraneous-path-error [_ {:keys [data-under-validation]} extra-path]
     {:type :extraneous-path
-     :map map-under-validation
+     :data data-under-validation
      :unexpected-path extra-path})
 
-  (missing-path-error [_ {:keys [map-under-validation]} missing-path]
+  (missing-path-error [_ {:keys [data-under-validation]} missing-path]
     {:type :missing-path
-     :map map-under-validation
+     :data data-under-validation
      :missing-path missing-path})
 
-  (not-a-sequential-error [_ {:keys [full-path map-under-validation]} values-at-path]
-    {:type :not-a-sequence
-     :map map-under-validation
-     :path full-path
-     :value values-at-path})
-
-  (not-a-set-error [_ {:keys [full-path map-under-validation]} values-at-path]
-    {:type :not-a-set
-     :map map-under-validation
-     :path full-path
-     :value values-at-path})
-
-  (predicate-fail-error [_ {:keys [full-path map-under-validation]} val-at-path pred]
+   (predicate-fail-error [_ {:keys [full-path data-under-validation]} val-at-path pred]
     {:type :predicate
-     :map map-under-validation
+     :data data-under-validation
      :path full-path
      :value val-at-path
      :predicate pred})
 
-  (instance-of-fail-error [_ {:keys [full-path map-under-validation]} val-at-path expected-class]
+  (instance-of-fail-error [_ {:keys [full-path data-under-validation]} val-at-path expected-class]
     {:type :instance-of
      :value val-at-path
-     :map map-under-validation
+     :data data-under-validation
      :path full-path
      :values-class (class val-at-path)
      :expected-class expected-class}))
@@ -195,7 +197,7 @@ These should probably be renamed to something less confusing. Any ideas?
 ```clj
 (:require [clj-schema.fixtures :refer [def-fixture def-fixture-factory])
 
-(defschema person-schema
+(def-map-schema person-schema
   [[:name :first] String
    [:name :last]  String
    [:height]      Double])
@@ -234,15 +236,30 @@ These should probably be renamed to something less confusing. Any ideas?
     {:height length :width length}))
 ```
 
-Type Coercion using Schemas
-===========================
+Seq and Set Validation and Introducing Constraints
+==================================================
 
-Very new.  Will likely change a bunch.
+You can also add constraints: predicates that apply to the entire 
+data structure under validation:
 
-Support for attempting to coerce a map to pass a given schema.  This can be used 
-to assist JSON deserialization or XML parsing, for example.
+```clj
+(def-map-schema :loose my-map-schema
+  (constraints sorted?
+               (comp even? count keys))
+  [[:a] String])
 
-Uses a multi-method to define coercers, so you can extend it.
+;; Here every element of the sequence must be a Long
+(def-seq-schema my-seq-schema
+  (constraints vector? 
+               #(< 10 (count %)))
+  Long)  
+
+;; and here every element of the set must be a number
+(def-set-schema my-seq-schema
+  (constraints #(< 10 (count %)))
+  Number)  
+```
+
 
 Validated Compojure Routes
 ==========================
@@ -258,7 +275,7 @@ recommend you check it out.
           [clj-schema.validation :as val]
           [clj-schema.validators :as v])
 
-(defschema user-params-schema 
+(def-map-schema user-params-schema 
   [[:name] v/NonEmptyString])
 
 (checked/POST "/user" {^{:check #(val/validation-errors user-params-schema %)} params :params}
