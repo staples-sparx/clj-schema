@@ -17,8 +17,6 @@
   (constraint-error [this state constraint] "Caused by a constraint predicate failing against the entire map")
   (extraneous-path-error [this state xtra-path] "Caused by finding a path that doesn't exist in the schema.  This only applies to schemas that are not loose")
   (missing-path-error [this state missing-path] "Caused by not finding a path mentioned in the schema")
-  (not-a-sequential-error [this state values-at-path] "Caused by a value not being sequential, when that path has a `(sequence-of ...) validator`")
-  (not-a-set-error [this state value-at-path] "Caused by a value not being a set, when it that path has a `(set-of ...) validator`")
   (predicate-fail-error [this state val-at-path pred] "Caused by a predicate validator returning false or nil")
   (instance-of-fail-error [this state val-at-path expected-class] "Caused by the value not being the expected Class, and not being a subtype of the expected Class"))
 
@@ -34,20 +32,12 @@
   (missing-path-error [_ _ missing-path]
     (format "Map did not contain expected path %s." missing-path))
   
-  (not-a-sequential-error [_ {:keys [full-path]} values-at-path]
-    (format "Map value %s, at path %s, was not sequential but was tagged with 'sequence-of'."
-            (pr-str values-at-path) full-path))
-
-  (not-a-set-error [_ {:keys [full-path]} value-at-path]
-    (format "Map value %s, at path %s, was not a set but was tagged with 'set-of'."
-            (pr-str value-at-path) full-path))
-  
   (predicate-fail-error [_ {:keys [full-path]} val-at-path pred]
-    (format "Map value %s, at path %s, did not match predicate '%s'."
+    (format "Value %s, at path %s, did not match predicate '%s'."
             (pr-str val-at-path) full-path (u/pretty-fn-str pred)))
   
   (instance-of-fail-error [_ {:keys [full-path]} val-at-path expected-class]
-    (format "Map value %s at path %s expected class %s, but was %s"
+    (format "Value %s at path %s expected class %s, but was %s"
             (pr-str val-at-path) full-path (pr-str expected-class) (pr-str (class val-at-path)))))
 
 ;; used to hold state of one `validation-errors` calculation
@@ -67,9 +57,7 @@
    :schema-without-wildcard-paths *schema-without-wildcard-paths*})
 
 (defn- validator-type [validator]
-  (cond (s/sequence-of? validator) :sequence
-        (s/set-of? validator) :set
-        (s/schema? validator) :schema
+  (cond (s/schema? validator) :schema
         (class? validator) :class
         (and (sequential? validator) (= :or (first validator))) :or-statement
         (sequential? validator) :and-statement
@@ -106,20 +94,9 @@
       error-msgs
       [])))
 
-(defmethod errors-for-path-content :sequence [full-path values-at-path validator]
-  (if (or (nil? values-at-path) (sequential? values-at-path))
-    (mapcat #(errors-for-path-content full-path % (:single-item-validator validator)) values-at-path)
-    [(not-a-sequential-error *error-reporter* (state-map-for-reporter full-path) values-at-path)]))
-
-(defmethod errors-for-path-content :set [full-path values-at-path validator]
-  (if (or (nil? values-at-path) (set? values-at-path))
-    (mapcat #(errors-for-path-content full-path % (:single-item-validator validator)) values-at-path)
-    [(not-a-set-error *error-reporter* (state-map-for-reporter full-path) values-at-path)]))
-
 (defn- matches-validator? [validator x]
   (empty? (errors-for-path-content [] x validator)))
 
-;; TODO - ALEX July 30, move to some utils ns
 (defn- safe-keys [x]
   (when (map? x)
     (keys x)))
@@ -218,17 +195,22 @@
          (constraint-error *error-reporter* (state-map-for-reporter []) c))))
 
 
-(defn- map-validation-errors [error-reporter parent-path schema m]
-  (binding [*error-reporter* error-reporter
-            *map-under-validation* m
-            *schema* schema
-            *parent-path* parent-path
-            *all-wildcard-paths* (s/wildcard-path-set schema)
+(defn- map-validation-errors [parent-path schema m]
+  (binding [*all-wildcard-paths* (s/wildcard-path-set schema)
             *schema-without-wildcard-paths* (s/subtract-wildcard-paths schema)]
-    (if-let [c-errors (seq (constraint-errors))]
-      (set c-errors)
-      (set/union (path-content-errors)
-                 (extraneous-paths-errors)))))
+    (set/union (path-content-errors)
+               (extraneous-paths-errors))))
+
+(defn- seq-validation-errors [parent-path schema xs]
+  (let [validator (:schema-spec schema)
+        map-fn (fn [idx x]
+                 (errors-for-path-content parent-path x validator))]
+    (->> (map-indexed map-fn xs)
+         (apply concat)
+         set)))
+
+(defn- set-validation-errors [parent-path schema xs]
+  (seq-validation-errors parent-path schema xs))
 
 (defn validation-errors
   "Returns a set of all the validation errors found when comparing a given
@@ -241,10 +223,16 @@
   ([error-reporter schema m]
      (validation-errors error-reporter [] schema m))
   ([error-reporter parent-path schema m]
-     (case (:type schema)
-       :map (map-validation-errors error-reporter parent-path schema m)
-       :seq #{}
-       :set #{})))
+     (binding [*error-reporter* error-reporter
+               *map-under-validation* m
+               *schema* schema
+               *parent-path* parent-path]
+       (if-let [c-errors (seq (constraint-errors))]
+         (set c-errors)
+         (case (:type schema)
+           :map (map-validation-errors parent-path schema m)
+           :seq (seq-validation-errors parent-path schema m)
+           :set (set-validation-errors parent-path schema m))))))
 
 (defn valid?
   "Returns true if calling `validation-errors` would return no errors"

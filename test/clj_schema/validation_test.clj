@@ -35,7 +35,7 @@
 
        [[:bb] Integer]
        {:bb "bb"}
-       #{"Map value \"bb\" at path [:bb] expected class java.lang.Integer, but was java.lang.String"}
+       #{"Value \"bb\" at path [:bb] expected class java.lang.Integer, but was java.lang.String"}
 
        [[:b :c] Integer]
        {:b "a"}
@@ -44,7 +44,7 @@
 
        [[:b :c] Integer]
        {:b {:c :a}}
-       #{"Map value :a at path [:b :c] expected class java.lang.Integer, but was clojure.lang.Keyword"}
+       #{"Value :a at path [:b :c] expected class java.lang.Integer, but was clojure.lang.Keyword"}
 
        ;;
 
@@ -60,8 +60,8 @@
 
        [[:b] [String Keyword]]
        {:b 1.1}
-       #{"Map value 1.1 at path [:b] expected class java.lang.String, but was java.lang.Double"
-         "Map value 1.1 at path [:b] expected class clojure.lang.Keyword, but was java.lang.Double"}
+       #{"Value 1.1 at path [:b] expected class java.lang.String, but was java.lang.Double"
+         "Value 1.1 at path [:b] expected class clojure.lang.Keyword, but was java.lang.Double"}
 
        [[:b :c] [number? pos?]]
        {:b "a"}
@@ -70,8 +70,8 @@
 
        [[:b :c] [String Keyword]]
        {:b {:c 1.1}}
-       #{"Map value 1.1 at path [:b :c] expected class java.lang.String, but was java.lang.Double"
-         "Map value 1.1 at path [:b :c] expected class clojure.lang.Keyword, but was java.lang.Double"}
+       #{"Value 1.1 at path [:b :c] expected class java.lang.String, but was java.lang.Double"
+         "Value 1.1 at path [:b :c] expected class clojure.lang.Keyword, but was java.lang.Double"}
 
        ;;
 
@@ -82,15 +82,15 @@
         [:z :z :top] keyword?]
        {:b {:c "a" :d :foo}
         :x {:y 99}}
-       #{"Map value \"a\", at path [:b :c], did not match predicate 'number?'."
-         "Map value \"a\", at path [:b :c], did not match predicate 'pos?'."
+       #{"Value \"a\", at path [:b :c], did not match predicate 'number?'."
+         "Value \"a\", at path [:b :c], did not match predicate 'pos?'."
          "Map did not contain expected path [:z :z :top]."
-         "Map value 99, at path [:x :y], did not match predicate 'neg?'." }
+         "Value 99, at path [:x :y], did not match predicate 'neg?'." }
 
 ;;;; when using 'sequence-of' validator is applied against each element in the sequence at that key
        [[:a] (sequence-of person-schema)]
        {:a [{:name {:first "Roberto"} :height 11} {:name {:first "Roberto"} :height "11"}]}
-       #{"Map value \"11\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
+       #{"Value \"11\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
 
 ;;;; if the schema path isn't present, and using a schema validator the seq, we get a "not present" error
        [[:a] (sequence-of person-schema)]
@@ -106,20 +106,20 @@
 ;;;; `optional-path` has no effect if the schema path is present
        [(optional-path [:a]) (sequence-of person-schema)]
        {:a [{:name {:first "Roberto"} :height 70} {:name {:first "Roberto"} :height "70"}]}
-       #{"Map value \"70\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
+       #{"Value \"70\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
 
 ;;;; you can mix types of validators: preds with schemas
        [[:a] (sequence-of [first-name-bob? person-schema])]
        {:a [{:name {:first "Roberto"} :height 44} {:name {:first "Chris"} :height "4a"}]}
-       #{"Map value \"4a\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"
-         "Map value {:name {:first \"Roberto\"}, :height 44}, at path [:a], did not match predicate 'clj-schema.validation-test/first-name-bob?'."
-         "Map value {:name {:first \"Chris\"}, :height \"4a\"}, at path [:a], did not match predicate 'clj-schema.validation-test/first-name-bob?'."}
+       #{"Value \"4a\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"
+         "Value {:name {:first \"Roberto\"}, :height 44}, at path [:a], did not match predicate 'clj-schema.validation-test/first-name-bob?'."
+         "Value {:name {:first \"Chris\"}, :height \"4a\"}, at path [:a], did not match predicate 'clj-schema.validation-test/first-name-bob?'."}
 
 ;;;; ...  multiple strict schemas together makes little sense - one schema will think extra keys were not specified by it, though they were by the other schema
        [[:a] (sequence-of [name-schema person-schema])]
        {:a [{:name {:first :Roberto} :height 69} {:name {:first "Roberto"} :height "69"}]}
-       #{"Map value \"69\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"
-         "Map value :Roberto at path [:a :name :first] expected class java.lang.String, but was clojure.lang.Keyword"
+       #{"Value \"69\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"
+         "Value :Roberto at path [:a :name :first] expected class java.lang.String, but was clojure.lang.Keyword"
          "Path [:a :height] was not specified in the schema."}
 
 ;;;; validator on right of schema, can be made an or, and can work with both preds and schemas mixed
@@ -130,19 +130,19 @@
 ;;;; you can have just one thing in the ':or' - but please don't it is weird
        [[:a] (sequence-of [:or person-schema])]
        {:a [{:name {:first "Roberto"} :height "76"}]}
-       #{"Map value \"76\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
+       #{"Value \"76\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
 
 ;;;; when both :or options fail - see errors for both 'nil?' and 'person-schema'
        [[:a] [:or nil? person-schema]]
        {:a {:name {:first "Roberto"} :height "66"}}
-       #{"Map value {:name {:first \"Roberto\"}, :height \"66\"}, at path [:a], did not match predicate 'nil?'."
-         "Map value \"66\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
+       #{"Value {:name {:first \"Roberto\"}, :height \"66\"}, at path [:a], did not match predicate 'nil?'."
+         "Value \"66\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
 
 ;;;; or collects all failures in the sequence being checked
        [[:a] (sequence-of [:or nil? person-schema])]
        {:a [{:name {:first "Roberto"} :height "88"} {:name {:first "Roberto"} :height 88}]}
-       #{"Map value \"88\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"
-         "Map value {:name {:first \"Roberto\"}, :height \"88\"}, at path [:a], did not match predicate 'nil?'."}
+       #{"Value \"88\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"
+         "Value {:name {:first \"Roberto\"}, :height \"88\"}, at path [:a], did not match predicate 'nil?'."}
 
 ;;;; nested schemas - no errors
        [[:a :family] family-schema]
@@ -158,8 +158,8 @@
                            :height 42}
                      :dad {:name {:first "Stanley"}
                            :height :53}}}}
-       #{"Map value :53 at path [:a :family :dad :height] expected class java.lang.Number, but was clojure.lang.Keyword"
-         "Map value :Theresa at path [:a :family :mom :name :first] expected class java.lang.String, but was clojure.lang.Keyword"
+       #{"Value :53 at path [:a :family :dad :height] expected class java.lang.Number, but was clojure.lang.Keyword"
+         "Value :Theresa at path [:a :family :mom :name :first] expected class java.lang.String, but was clojure.lang.Keyword"
          }
 
 ;;;; strict schemas fail if there are more keys than specified
@@ -221,12 +221,12 @@
 ;;;; marked as 'sequence-of' but only one value - causes an error
        [[:a] (sequence-of person-schema)]
        {:a {:name {:first "Roberto"} :height "76"}}
-       #{"Map value {:name {:first \"Roberto\"}, :height \"76\"}, at path [:a], was not sequential but was tagged with 'sequence-of'."}
+       #{"At path [:a], constraint failed. Expected '((fn [m] (or (nil? m) (sequential? m))) {:name {:first \"Roberto\"}, :height \"76\"})' to be true, but was false."}
 
-;;;; using 'sequence-of' with an 'Number' predicate - means there is a seq of numbers
+;;;; using 'sequence-of' with an 'Number' class - means there is a seq of numbers
        [[:a] (sequence-of Number)]
        {:a 1}
-       #{"Map value 1, at path [:a], was not sequential but was tagged with 'sequence-of'."}
+       #{"At path [:a], constraint failed. Expected '((fn [m] (or (nil? m) (sequential? m))) 1)' to be true, but was false."}
 
 ;;;; nil is an acceptable value for a 'sequence-of' validator
        [[:a] (sequence-of integer?)]
@@ -246,12 +246,12 @@
 ;;;; marked as 'set-of' but only one value - causes an error
        [[:a] (set-of person-schema)]
        {:a {:name {:first "Roberto"} :height "76"}}
-       #{"Map value {:name {:first \"Roberto\"}, :height \"76\"}, at path [:a], was not a set but was tagged with 'set-of'."}
+       #{"At path [:a], constraint failed. Expected '((fn [m] (or (nil? m) (set? m))) {:name {:first \"Roberto\"}, :height \"76\"})' to be true, but was false."}
 
 ;;;; using 'set-of' with an 'Number' predicate - means there is a set of numbers
        [[:a] (set-of Number)]
        {:a 1}
-       #{"Map value 1, at path [:a], was not a set but was tagged with 'set-of'."}
+       #{"At path [:a], constraint failed. Expected '((fn [m] (or (nil? m) (set? m))) 1)' to be true, but was false."}
 
 ;;;; nil is an acceptable value for a 'set-of' validator
        [[:a] (set-of integer?)]
@@ -285,7 +285,7 @@
 
        [[:a] String]
        {:a :Roberto}
-       #{"Map value :Roberto at path [:a] expected class java.lang.String, but was clojure.lang.Keyword"}
+       #{"Value :Roberto at path [:a] expected class java.lang.String, but was clojure.lang.Keyword"}
 
        ;; instance-of? satisfies the predicate -- Long is an instance of Number
        [[:a] Number]
@@ -303,7 +303,7 @@
        ;; validates the value at the given path, like normal
        [[:a (wild keyword?) (wild string?)] String]
        {:a {:x {"b" :b "c" "letter c"}}}
-       #{"Map value :b at path [:a :x \"b\"] expected class java.lang.String, but was clojure.lang.Keyword"}
+       #{"Value :b at path [:a :x \"b\"] expected class java.lang.String, but was clojure.lang.Keyword"}
 
        ;; if a path exists that doesn't match the wildcard, it is considered an extraneous path
        [[:a] (strict-schema [[(wild Keyword)] String])]
@@ -314,12 +314,12 @@
        ;; can use Class objects as wildcard part of wildcard path
        [[:a (wild String)] String]
        {:a {"b" :b "c" "letter c"}}
-       #{"Map value :b at path [:a \"b\"] expected class java.lang.String, but was clojure.lang.Keyword"}
+       #{"Value :b at path [:a \"b\"] expected class java.lang.String, but was clojure.lang.Keyword"}
 
        ;; can use 'and statements' in validators
        [[:a (wild [String #{"baz" "qux"}])] String]
        {:a {"baz" :b "c" "letter c"}}
-       #{"Map value :b at path [:a \"baz\"] expected class java.lang.String, but was clojure.lang.Keyword"
+       #{"Value :b at path [:a \"baz\"] expected class java.lang.String, but was clojure.lang.Keyword"
          "Path [:a \"c\"] was not specified in the schema."}
 
        ;; if no keys of the leaf-map match the wildcard-validator, that is OK
@@ -412,8 +412,8 @@
        ;; [Issue #1] - continued...
        [[:a] [empty? (sequence-of String)]]
        {:a ["Roberto"]}
-       #{"Map value [\"Roberto\"], at path [:a], did not match predicate 'empty?'."}
-       
+       #{"Value [\"Roberto\"], at path [:a], did not match predicate 'empty?'."}
+
        ))
 
 (deftest test-schemas-can-check-constraints-against-entire-map
@@ -538,3 +538,8 @@
                               foo-schema
                               (fn [m] (str "SUCCESS: " m))
                               (fn [m errors] (str "FAIL: " m errors))))))
+
+(deftest test-seq-validation-errors
+  (is (= #{} (validation-errors (seq-schema String) ["a" "b" "c"])))
+  (is (= #{"Value :c at path [] expected class java.lang.String, but was clojure.lang.Keyword" "Value :b at path [] expected class java.lang.String, but was clojure.lang.Keyword" "Value :a at path [] expected class java.lang.String, but was clojure.lang.Keyword"}
+         (validation-errors (seq-schema String) [:a :b :c]))))

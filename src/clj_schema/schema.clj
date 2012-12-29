@@ -95,7 +95,8 @@ path and the second element is the validator"
 (defn constraints?
   "Returns whether x is a seq of only constraints."
   [x]
-  (every? constraint? x))
+  (and (sequential? x)
+       (every? constraint? x)))
 
 
 ;;;; Schema Creation
@@ -122,6 +123,12 @@ path and the second element is the validator"
 
 (def ^{:doc "Constraints common to all map schemas"}
   map-constraints (constraints (fn [m] (or (nil? m) (map? m)))))
+
+(def ^{:doc "Constraints common to all seq schemas"}
+  seq-constraints (constraints (fn [m] (or (nil? m) (sequential? m)))))
+
+(def ^{:doc "Constraints common to all set schemas"}
+  set-constraints (constraints (fn [m] (or (nil? m) (set? m)))))
 
 (defn loose-schema
   "TODO"
@@ -156,38 +163,47 @@ path and the second element is the validator"
     `(-> (def ~name (~schema-maker ~@constraints-and-schema-vectors))
          (alter-meta! assoc ::schema true ::strict ~(= :strict looseness)))))
 
+(defn seq-schema
+  "TODO"
+  [& constraints-and-schema-specs]
+  (println "SEQ SCHEMA::" constraints-and-schema-specs)
+  (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-specs))
+        validator (first (remove constraints? constraints-and-schema-specs))]
+    ;; TODO: unit test in some validations of these args
+    {:type :seq
+     :schema-spec validator
+     :constraints (concat seq-constraints user-specified-constraints)}))
+
+(defmacro def-seq-schema
+  "TODO"
+  [name & constraints-and-schema-specs]
+  `(def ~name (seq-schema ~@constraints-and-schema-specs)))
+
+(defn set-schema
+  "TODO"
+  [& constraints-and-schema-specs]
+  (println "SET SCHEMA::" constraints-and-schema-specs)
+  (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-specs))
+        validator (first (remove constraints? constraints-and-schema-specs))]
+    ;; TODO: unit test in some validations of these args
+    {:type :set
+     :schema-spec validator
+     :constraints (concat set-constraints user-specified-constraints)}))
+
+(defmacro def-set-schema
+  "TODO"
+  [name & constraints-and-schema-specs]
+  `(def ~name (set-schema ~@constraints-and-schema-specs)))
+
 
 ;; Validator Modifiers
 
-; sequence-of
-(defrecord SequenceOfItemsValidator [single-item-validator])
+(def ^{:doc "Wraps a validator to make it a validator that apply to every element of a sequential"}
+  sequence-of seq-schema)
 
-(defn sequence-of
-  "Wraps a validator to make it a validator that apply to every
-element of a sequential"
-  [single-item-validator]
-  (SequenceOfItemsValidator. single-item-validator))
+(def ^{:doc "Wraps a validator to make it a validator that apply to every element of a set"}
+  set-of set-schema)
 
-(defn sequence-of?
-  "Returns whether a validator is a sequence-of validator."
-  [validator]
-  (= SequenceOfItemsValidator (class validator)))
-
-; set-of
-(defrecord SetOfItemsValidator [single-item-validator])
-
-(defn set-of
-  "Wraps a validator to make it a validator that apply to every
-element of a set"
-  [single-item-validator]
-  (SetOfItemsValidator. single-item-validator))
-
-(defn set-of?
-  "Returns whether a validator is a set-of validator."
-  [validator]
-  (= SetOfItemsValidator (class validator)))
-
-; wild
 (defrecord WildcardValidator [validator])
 
 (defn wildcard-validator?
@@ -202,7 +218,7 @@ element of a set"
   (WildcardValidator. validator))
 
 (defn wildcard-path?
-  "Returns whether or not a path is an wildcard-path"
+  "Returns whether or not a path is a wildcard-path"
   [schema-path]
   (some wildcard-validator? schema-path))
 
