@@ -57,7 +57,7 @@
   [x]
   (if (var? x)
     (contains? (meta x) ::schema)
-    (contains? x :schema)))
+    (contains? x :schema-spec)))
 
 (defn strict-schema?
   "Returns whether a schema is strict.  A strict schema necessitates that
@@ -79,12 +79,12 @@ map under-validation to have more keys than are specified in the schema."
   "Returns a sequence of pairs, where the first element is the
 path and the second element is the validator"
   [schema]
-  (partition 2 (:schema schema)))
+  (partition 2 (:schema-spec schema)))
 
 (defn schema-path-set
   "Returns the set of all paths in the schema."
   [schema]
-  (set (take-nth 2 (:schema schema))))
+  (set (take-nth 2 (:schema-spec schema))))
 
 (defn constraint?
   "Returns whether x is a constraint."
@@ -104,14 +104,14 @@ path and the second element is the validator"
   "From a seq of vectors, creates a schema that can be used within other schemas.
    Checks for the presence of all paths; other paths may also exist."
   [& constraints-and-schema-vectors]
-  (let [flattened-schemas (mapcat :schema (filter schema? constraints-and-schema-vectors))
+  (let [flattened-schemas (mapcat :schema-spec (filter schema? constraints-and-schema-vectors))
         vs1 (remove #(or (constraints? %)
                          (schema? %)) constraints-and-schema-vectors)
        
         vs (vec (apply concat flattened-schemas vs1))]
     (assert (even? (count vs)))
-    (assert (every? sequential? (schema-path-set {:schema vs})))
-    {:schema vs
+    (assert (every? sequential? (schema-path-set {:schema-spec vs})))
+    {:schema-spec vs
      :constraints (apply concat (filter constraints? constraints-and-schema-vectors))
      :strict false}))
 
@@ -234,10 +234,10 @@ element of a set"
 (defn filter-schema
   "Takes a pred like (fn [[path validator]] ...) and selects all schema rows that match."
   [pred schema]
-  (assoc schema :schema (->> (schema-rows schema)
-                             (filter pred)
-                             (apply concat)
-                             vec)))
+  (assoc schema :schema-spec (->> (schema-rows schema)
+                                  (filter pred)
+                                  (apply concat)
+                                  vec)))
 
 (defn subtract-paths
   "Returns a new schema minus some paths."

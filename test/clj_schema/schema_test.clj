@@ -17,14 +17,14 @@
   (let [loose (loose-schema  [[:a] even?]
                              [[:b] String
                               [:a] Number])]
-    (is (= {:schema [[:a] even?
-                     [:b] String
-                     [:a] Number]
+    (is (= {:schema-spec [[:a] even?
+                          [:b] String
+                          [:a] Number]
             :constraints []
             :strict false}) loose)
-    (is (= {:schema [[:a] even?
-                     [:b] String
-                     [:a] Number]
+    (is (= {:schema-spec [[:a] even?
+                          [:b] String
+                          [:a] Number]
             :constraints []
             :strict true}
            (as-strict-schema loose)))))
@@ -33,27 +33,27 @@
   (let [strict (strict-schema  [[:a] even?]
                                [[:b] String
                                 [:a] Number])]
-    (is (= {:schema [[:a] even?
-                     [:b] String
-                     [:a] Number]
+    (is (= {:schema-spec [[:a] even?
+                          [:b] String
+                          [:a] Number]
             :constraints []
             :strict true}) strict)
-    (is (= {:schema [[:a] even?
-                     [:b] String
-                     [:a] Number]
+    (is (= {:schema-spec [[:a] even?
+                          [:b] String
+                          [:a] Number]
             :constraints []
             :strict false}
            (as-loose-schema strict)))))
 
 (deftest test-def-loose-schema
-  (is (= {:schema [[:name :first] java.lang.String
-                   [:height] java.lang.Number]
+  (is (= {:schema-spec [[:name :first] java.lang.String
+                        [:height] java.lang.Number]
           :constraints []
           :strict false}
          loose-person-schema)))
 
 (deftest test-defschema
-  (is (= {:schema [[:name :first] java.lang.String [:height] java.lang.Number]
+  (is (= {:schema-spec [[:name :first] java.lang.String [:height] java.lang.Number]
           :constraints []
           :strict true}
          person-schema)))
@@ -68,7 +68,7 @@
 
 (deftest test-schemas-with-constraints
   (is (= 3 (count (keys schema-with-constraints))))
-  (is (= [[:a] java.lang.String [:b] java.lang.Number] (:schema schema-with-constraints)))
+  (is (= [[:a] java.lang.String [:b] java.lang.Number] (:schema-spec schema-with-constraints)))
   (is (= false (:strict schema-with-constraints)))
   (is (= 2 (count (:constraints schema-with-constraints))))
   (is (every? constraint? (:constraints schema-with-constraints))))
@@ -83,12 +83,12 @@
   (is (= [[[:name :first] java.lang.String]
           [[:height] java.lang.Number]]
          (schema-rows loose-person-schema)))
-  (is (= [[[:mom] {:schema [[:name :first] java.lang.String
-                            [:height] java.lang.Number]
+  (is (= [[[:mom] {:schema-spec [[:name :first] java.lang.String
+                                 [:height] java.lang.Number]
                    :constraints []
                    :strict true}]
-          [[:dad] {:schema [[:name :first] java.lang.String
-                            [:height] java.lang.Number]
+          [[:dad] {:schema-spec [[:name :first] java.lang.String
+                                 [:height] java.lang.Number]
                    :constraints []
                    :strict true}]]
          (schema-rows family-schema))))
