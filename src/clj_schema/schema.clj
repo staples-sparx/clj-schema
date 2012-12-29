@@ -22,7 +22,7 @@
 
        Example Schema:
 
-      (defschema bar-schema
+      (def-map-schema bar-schema
        [[:a :b :c] pred
        [:x :y :z] [pred2 pred3 z-schema] ;; implicit 'and' - all three must pass
        [:p :q :r] [:or nil? r-schema]    ;; an 'or' statement - need just one to pass
@@ -33,14 +33,14 @@
 
      Example schema w/ wildcard paths:
 
-      (defschema foo-schema
+      (def-map-schema foo-schema
         [[:a (wild String) (wild Number)] String])
 
       => matches maps such as:
          {:a {\"car\" {1.21 \"jigawatts\"}}}
          {:a {\"banana\" {2 \"green\"
 
-      `defschema` creates a strict schema, which expects only the paths it
+      `def-map-schema` creates a strict schema, which expects only the paths it
       describes to be present on the given map.
 
       `def-loose-schema` creates a loose schema, which expects its paths to
@@ -148,7 +148,7 @@ path and the second element is the validator"
   `(-> (def ~name (loose-schema ~@constraints-and-schema-vectors))
        (alter-meta! assoc ::schema true)))
 
-(defmacro defschema
+(defmacro def-map-schema
   "Creates a named var for a strict schema TODO"
   [name & constraints-and-schema-vectors]
   `(-> (def ~name (strict-schema ~@constraints-and-schema-vectors))
@@ -273,7 +273,7 @@ element of a set"
   "Makes a simple scaffolding schema from a given map m.
    Each path has a validator of Anything."
   [schema-name m]
-  (list 'defschema (symbol schema-name)
+  (list 'def-map-schema (symbol schema-name)
         (vec (interleave (sort (u/paths m))
                          (repeat 'Anything)))))
 

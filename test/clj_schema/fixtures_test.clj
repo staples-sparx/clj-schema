@@ -4,7 +4,7 @@
   (:require [clj-schema.schema :as schema]
             [clj-schema.validators :as v]))
 
-(schema/defschema person-schema
+(schema/def-map-schema person-schema
   [[:name] v/NonEmptyString
    [:height] Number])
 

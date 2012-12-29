@@ -52,7 +52,7 @@
           :strict false}
          loose-person-schema)))
 
-(deftest test-defschema
+(deftest test-def-map-schema
   (is (= {:schema-spec [[:name :first] java.lang.String [:height] java.lang.Number]
           :constraints map-constraints
           :strict true}
@@ -172,7 +172,7 @@
                                                          (optional-path [:a]) Integer])))))
 
 (deftest test-scaffold-schema
-  (is (= '(defschema foo
+  (is (= '(def-map-schema foo
             [[:a] Anything
              [:b :c] Anything])
          (scaffold-schema "foo" {:a 1234

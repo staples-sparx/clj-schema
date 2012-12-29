@@ -522,7 +522,7 @@
        [(wild keyword?) (wild String)]
        true))
 
-(defschema foo-schema
+(def-map-schema foo-schema
   [[:a] String])
 
 (deftest test-validate-and-handle
