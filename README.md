@@ -79,19 +79,16 @@ You can combine more than one schema into a combined schema like this:
 Schemas are just maps:
 
 ```clj
-(def-map-schema :loose foo-schema [[:a] String])
+(def-map-schema foo-schema [[:a] String])
 ;; foo-schema
 ;; => {:type :map
 ;;     :schema-spec [[:a] java.lang.String]
 ;;     :constraints ({:predicate #<schema$fn__145 clj_schema.schema$fn__145@12948069>
 ;;                    :source (fn [m] (or (nil? m) (map? m)))}) 
-;;     :strict false}
+;;     :strict true}
 ```
 
-`def-map-schema` creates a strict schema by default, which expects only the paths it
-describes to be present on the given map.  Making a schema strict requires 
-a `:clj-schema.schema` true metadata on the vector of paths. `def-map-schema`
-does that for you internally.
+As you can see in the example above, `def-map-schema` creates a strict schema by default, which expects only the paths it describes to be present on the given map.
 
 `(def-map-schema :loose [[:a] String])` creates a loose schema, which expects its paths to be
 present but does not complain about extra paths
