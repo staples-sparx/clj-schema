@@ -30,3 +30,10 @@
                (fn [m] (even? (count (keys m)))))
   [[:a] String
    [:b] Number])
+
+(def-seq-schema my-seq-schema
+  String)
+
+(def-set-schema my-set-schema
+  Number)
+

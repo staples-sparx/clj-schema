@@ -151,7 +151,10 @@
 
        (as-loose-schema (map-schema :strict [[:a] string?])) schema?
        (as-loose-schema (map-schema :strict [[:a] string?])) loose-schema?
-       (as-loose-schema (map-schema :strict [[:a] string?])) (complement strict-schema?)))
+       (as-loose-schema (map-schema :strict [[:a] string?])) (complement strict-schema?)
+
+       #'my-seq-schema schema?
+       #'my-set-schema schema?))
 
 (deftest test-subtract-paths
   (doseq [[schema-identifier looseness] [[loose-schema? :loose]

@@ -174,7 +174,8 @@ path and the second element is the validator"
 (defmacro def-seq-schema
   "Creates a named var for a seq-schema. See `seq-schema` for more details."
   [name & constraints-and-schema-specs]
-  `(def ~name (seq-schema ~@constraints-and-schema-specs)))
+  `(-> (def ~name (seq-schema ~@constraints-and-schema-specs))
+       (alter-meta! assoc ::schema true)))
 
 (defn set-schema
   "Creates a schema for a set. Every element of the set should match
@@ -190,7 +191,8 @@ path and the second element is the validator"
 (defmacro def-set-schema
   "Creates a named var for a set-schema. See `set-schema` for more details."
   [name & constraints-and-schema-specs]
-  `(def ~name (set-schema ~@constraints-and-schema-specs)))
+  `(-> (def ~name (set-schema ~@constraints-and-schema-specs))
+       (alter-meta! assoc ::schema true)))
 
 
 ;; Validator Modifiers
