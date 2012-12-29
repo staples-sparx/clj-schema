@@ -171,9 +171,8 @@
     (is (schema-identifier (select-schema-keys (map-schema looseness [[:a :x] string? [:b :y] string? [:c :z] string?]) :b :c)))))
 
 (deftest test-schema-construction-preconditions
-   (are [looseness args] (thrown? AssertionError (map-schema looseness args))
-        :loose [[:a] string? [:b string?]]
-        :strict [[:a] string? [:b string?]]))
+  (is (thrown? AssertionError (map-schema :loose [[:a] string? [:b string?]])))
+  (is (thrown? AssertionError (map-schema :strict [[:a] string? [:b string?]]))))
 
 (deftest test-optional-path-set
   (is (= #{} (optional-path-set (map-schema :strict []))))
