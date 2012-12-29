@@ -217,6 +217,19 @@
              :when (not ((:predicate c) *map-under-validation*))]
          (constraint-error *error-reporter* (state-map-for-reporter []) c))))
 
+
+(defn- map-validation-errors [error-reporter parent-path schema m]
+  (binding [*error-reporter* error-reporter
+            *map-under-validation* m
+            *schema* schema
+            *parent-path* parent-path
+            *all-wildcard-paths* (s/wildcard-path-set schema)
+            *schema-without-wildcard-paths* (s/subtract-wildcard-paths schema)]
+    (if-let [c-errors (seq (constraint-errors))]
+      (set c-errors)
+      (set/union (path-content-errors)
+                 (extraneous-paths-errors)))))
+
 (defn validation-errors
   "Returns a set of all the validation errors found when comparing a given
    map m, against the supplied schema.
@@ -228,16 +241,10 @@
   ([error-reporter schema m]
      (validation-errors error-reporter [] schema m))
   ([error-reporter parent-path schema m]
-     (binding [*error-reporter* error-reporter
-               *map-under-validation* m
-               *schema* schema
-               *parent-path* parent-path
-               *all-wildcard-paths* (s/wildcard-path-set schema)
-               *schema-without-wildcard-paths* (s/subtract-wildcard-paths schema)]
-       (if-let [c-errors (seq (constraint-errors))]
-         (set c-errors)
-         (set/union (path-content-errors)
-                    (extraneous-paths-errors))))))
+     (case (:type schema)
+       :map (map-validation-errors error-reporter parent-path schema m)
+       :seq #{}
+       :set #{})))
 
 (defn valid?
   "Returns true if calling `validation-errors` would return no errors"

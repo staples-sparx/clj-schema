@@ -133,7 +133,8 @@ path and the second element is the validator"
         flattened-schema-specs (vec (concat flattened-schemas schema-specs))]
     (assert (even? (count schema-specs)))
     (assert (every? sequential? (schema-path-set {:schema-spec schema-specs})))
-    {:schema-spec flattened-schema-specs
+    {:type :map
+     :schema-spec flattened-schema-specs
      :constraints (concat map-constraints user-specified-constraints)
      :strict false}))
 
