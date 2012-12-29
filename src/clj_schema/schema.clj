@@ -282,8 +282,17 @@ path and the second element is the validator"
 (defn scaffold-schema
   "Makes a simple scaffolding schema from a given map m.
    Each path has a validator of Anything."
-  [schema-name m]
-  (list 'def-map-schema (symbol schema-name)
-        (vec (interleave (sort (u/paths m))
-                         (repeat 'Anything)))))
+  [schema-name x]
+  (cond (map? x)
+        (list 'def-map-schema (symbol schema-name)
+              (vec (interleave (sort (u/paths x))
+                               (repeat 'Anything))))
+
+        (set? x)
+        (list 'def-set-schema (symbol schema-name)
+              'Anything)
+
+        (sequential? x)
+        (list 'def-seq-schema (symbol schema-name)
+              'Anything)))
 

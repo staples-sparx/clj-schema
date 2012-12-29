@@ -184,4 +184,12 @@
             [[:a] Anything
              [:b :c] Anything])
          (scaffold-schema "foo" {:a 1234
-                                 :b {:c "asdf"}}))))
+                                 :b {:c "asdf"}})))
+
+  (is (= '(def-seq-schema foo
+            Anything)
+         (scaffold-schema "foo" [1 2 3])))
+
+  (is (= '(def-set-schema foo
+            Anything)
+         (scaffold-schema "foo" #{1 2 3}))))
