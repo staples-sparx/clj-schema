@@ -55,25 +55,25 @@
 (defn schema?
   "Returns whether x is a schema"
   [x]
-  (if (var? x)
-    (contains? (meta x) ::schema)
-    (contains? x :schema-spec)))
+  (cond (var? x) (contains? (meta x) ::schema)
+        (map? x) (contains? x :schema-spec)
+        :else false))
 
 (defn strict-schema?
   "Returns whether a schema is strict.  A strict schema necessitates that
 the map under-validation has all the paths listed in the schema and no extra paths" 
   [x]
-  (if (var? x)
-    (and (schema? x) (::strict (meta x)))
-    (and (schema? x) (:strict x))))
+  (cond (var? x) (and (schema? x) (::strict (meta x)))
+        (map? x) (and (schema? x) (:strict x))
+        :else false))
 
 (defn loose-schema?
   "Returns whether a schema is loose.  A loose schema allows the
 map under-validation to have more keys than are specified in the schema."
   [x]
-  (if (var? x)
-    (and (schema? x) (not (::strict (meta x))))
-    (and (schema? x) (not (:strict x)))))
+  (cond (var? x) (and (schema? x) (not (::strict (meta x))))
+        (map? x) (and (schema? x) (not (:strict x)))
+        :else false))
 
 (defn schema-rows
   "Returns a sequence of pairs, where the first element is the

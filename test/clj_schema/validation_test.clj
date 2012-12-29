@@ -417,11 +417,13 @@
        ))
 
 (deftest test-schemas-can-check-constraints-against-entire-map
-  (is (= #{"At path [], constraint failed. Expected '((fn [m] (even? (count (keys m)))) {:a \"string\", :b 99, :extra 47})' to be true, but was false."
-           "At path [], constraint failed. Expected '((comp even? count distinct vals) {:a \"string\", :b 99, :extra 47})' to be true, but was false."}
-         (validation-errors schema-with-constraints {:a "string"
-                                                     :b 99
-                                                     :extra 47})))
+  (let [errors (validation-errors schema-with-constraints {:a "string"
+                                                           :b 99
+                                                           :extra 47})]
+    (is (or (= #{"At path [], constraint failed. Expected '((fn [m] (even? (count (keys m)))) {:extra 47, :a \"string\", :b 99})' to be true, but was false." "At path [], constraint failed. Expected '((comp even? count distinct vals) {:extra 47, :a \"string\", :b 99})' to be true, but was false."}
+               errors)
+            (= #{"At path [], constraint failed. Expected '((fn [m] (even? (count (keys m)))) {:a \"string\", :b 99, :extra 47})' to be true, but was false." "At path [], constraint failed. Expected '((comp even? count distinct vals) {:a \"string\", :b 99, :extra 47})' to be true, but was false."}
+               errors))))
 
   (is (= #{} (validation-errors schema-with-constraints {:a "string"
                                                          :b 99}))))

@@ -16,9 +16,8 @@
                                   [jonase/eastwood "0.0.2"]
                                   [slamhound "1.3.0"]]}}
   :aliases {"slamhound" ["run" "-m" "slam.hound"]}
-  :multi-deps {"1.2.0" [[org.clojure/clojure "1.2.0"]]
-               "1.2.1" [[org.clojure/clojure "1.2.1"]]
+  :multi-deps {"1.2.1" [[org.clojure/clojure "1.2.1"]]
                "1.3.0" [[org.clojure/clojure "1.3.0"]]
                "1.4.0" [[org.clojure/clojure "1.4.0"]]
-               "1.5.0" [[org.clojure/clojure "1.5.0-beta1"]]
+               "1.5.0" [[org.clojure/clojure "1.5.0-RC1"]]
                 :all ~common-deps})
