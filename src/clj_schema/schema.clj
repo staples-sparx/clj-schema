@@ -195,7 +195,7 @@ path and the second element is the validator"
        (alter-meta! assoc ::schema true)))
 
 (defn simple-schema
-  "Makes a simple schema from a supplied Class. TODO, more :)"
+  "Makes a simple schema from a supplied xyz TODO, more :)"
   [x]
   (cond (class? x)
         {:type :class
@@ -209,6 +209,11 @@ path and the second element is the validator"
 
         (vector? x)
         {:type :and-statement
+         :schema-spec x
+         :constraints []}
+
+        :else
+        {:type :predicate
          :schema-spec x
          :constraints []}))
 

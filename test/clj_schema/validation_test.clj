@@ -564,4 +564,9 @@
          (validation-errors [Number Long] (long 55))))
   (is (= #{"Value :keyword at path [] expected class java.lang.Long, but was clojure.lang.Keyword"
            "Value :keyword at path [] expected class java.lang.Number, but was clojure.lang.Keyword"}
-         (validation-errors [Number Long] :keyword))))
+         (validation-errors [Number Long] :keyword)))
+
+  (is (= #{}
+         (validation-errors string? "string")))
+  (is (= #{"Value 99, at path [], did not match predicate 'string?'."}
+         (validation-errors string? 99))))

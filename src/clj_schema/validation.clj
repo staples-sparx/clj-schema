@@ -61,7 +61,7 @@
         (class? validator) :schema
         (and (sequential? validator) (= :or (first validator))) :schema
         (sequential? validator) :schema
-        :else :predicate))
+        :else :schema))
 
 (declare validation-errors)
 
@@ -69,11 +69,6 @@
 
 (defmethod errors-for-path-content :schema [full-path schema val-at-path]
   (validation-errors *error-reporter* full-path schema val-at-path))
-
-(defmethod errors-for-path-content :predicate [full-path pred val-at-path]
-  (if-not ((u/fn->fn-thats-false-if-throws pred) val-at-path)  ;; keeps us safe from ClassCastExceptions, etc
-    [(predicate-fail-error *error-reporter* (state-map-for-reporter full-path) val-at-path pred)]
-    []))
 
 ;; TODO - Dec 29, 2012 - move and/or/pred/class behavior into validation-errors, and
 ;; remove this :)
@@ -219,6 +214,12 @@
   (let [validators (:schema-spec schema)]
     (set (mapcat #(errors-for-path-content parent-path % x) validators))))
 
+(defn- predicate-validation-errors [parent-path schema x]
+  (let [pred (:schema-spec schema)]
+    (if-not ((u/fn->fn-thats-false-if-throws pred) x)  ;; keeps us safe from ClassCastExceptions
+      #{(predicate-fail-error *error-reporter* (state-map-for-reporter parent-path) x pred)}
+      #{})))
+
 (defn validation-errors
   "Returns a set of all the validation errors found when comparing a given
    map m, against the supplied schema.
@@ -245,7 +246,8 @@
              :set (set-validation-errors parent-path schema x)
              :class (class-validation-errors parent-path schema x)
              :or-statement (or-statement-validation-errors parent-path schema x)
-             :and-statement (and-statement-validation-errors parent-path schema x)))))))
+             :and-statement (and-statement-validation-errors parent-path schema x)
+             :predicate (predicate-validation-errors parent-path schema x)))))))
 
 (defn valid?
   "Returns true if calling `validation-errors` would return no errors"
