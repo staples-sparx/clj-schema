@@ -1,6 +1,6 @@
 (def common-deps '[]) ;; if any ever exist
 
-(defproject org.clojars.runa/clj-schema "0.7.2"
+(defproject org.clojars.runa/clj-schema "0.8.0-beta1"
   :description "Map schema definitions and validation library."
   :url "https://github.com/runa-dev/clj-schema"
   :license {:name "MIT License"
