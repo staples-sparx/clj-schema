@@ -90,7 +90,7 @@
 ;;;; when using 'sequence-of' schema is applied against each element in the sequence at that key
        [[:a] (sequence-of person-schema)]
        {:a [{:name {:first "Roberto"} :height 11} {:name {:first "Roberto"} :height "11"}]}
-       #{"Expected value \"11\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String"}
+       #{"Expected value \"11\", at path [:a 1 :height], to be an instance of class java.lang.Number, but was java.lang.String"}
 
 ;;;; if the schema path isn't present, and using a schema the seq, we get a "not present" error
        [[:a] (sequence-of person-schema)]
@@ -106,21 +106,22 @@
 ;;;; `optional-path` has no effect if the schema path is present
        [(optional-path [:a]) (sequence-of person-schema)]
        {:a [{:name {:first "Roberto"} :height 70} {:name {:first "Roberto"} :height "70"}]}
-       #{"Expected value \"70\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String"}
+       #{"Expected value \"70\", at path [:a 1 :height], to be an instance of class java.lang.Number, but was java.lang.String"}
 
 ;;;; you can mix types of simple-schemas: preds with schemas
        [[:a] (sequence-of [first-name-bob? person-schema])]
        {:a [{:name {:first "Roberto"} :height 44} {:name {:first "Chris"} :height "4a"}]}
-       #{"Value {:name {:first \"Roberto\"}, :height 44}, at path [:a], did not match predicate 'clj-schema.validation-test/first-name-bob?'."
-         "Expected value \"4a\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String"
-         "Value {:name {:first \"Chris\"}, :height \"4a\"}, at path [:a], did not match predicate 'clj-schema.validation-test/first-name-bob?'."}
+       #{"Value {:name {:first \"Roberto\"}, :height 44}, at path [:a 0], did not match predicate 'clj-schema.validation-test/first-name-bob?'."
+         "Expected value \"4a\", at path [:a 1 :height], to be an instance of class java.lang.Number, but was java.lang.String"
+         "Value {:name {:first \"Chris\"}, :height \"4a\"}, at path [:a 1], did not match predicate 'clj-schema.validation-test/first-name-bob?'."}
 
 ;;;; ...  multiple strict schemas together makes little sense - one schema will think extra keys were not specified by it, though they were by the other schema
        [[:a] (sequence-of [name-schema person-schema])]
        {:a [{:name {:first :Roberto} :height 69} {:name {:first "Roberto"} :height "69"}]}
-       #{"Path [:a :height] was not specified in the schema."
-         "Expected value \"69\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String"
-         "Expected value :Roberto, at path [:a :name :first], to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
+       #{"Path [:a 0 :height] was not specified in the schema."
+         "Path [:a 1 :height] was not specified in the schema."
+         "Expected value \"69\", at path [:a 1 :height], to be an instance of class java.lang.Number, but was java.lang.String"
+         "Expected value :Roberto, at path [:a 0 :name :first], to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
 
 ;;;; schema on right of schema, can be made an or, and can work with both preds and schemas mixed
        [[:a] [:or nil? person-schema]]
@@ -130,7 +131,7 @@
 ;;;; you can have just one thing in the ':or' - but please don't it is weird
        [[:a] (sequence-of [:or person-schema])]
        {:a [{:name {:first "Roberto"} :height "76"}]}
-       #{"Expected value \"76\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String"}
+       #{"Expected value \"76\", at path [:a 0 :height], to be an instance of class java.lang.Number, but was java.lang.String"}
 
 ;;;; when both :or options fail - see errors for both 'nil?' and 'person-schema'
        [[:a] [:or nil? person-schema]]
@@ -141,8 +142,8 @@
 ;;;; or collects all failures in the sequence being checked
        [[:a] (sequence-of [:or nil? person-schema])]
        {:a [{:name {:first "Roberto"} :height "88"} {:name {:first "Roberto"} :height 88}]}
-       #{"Expected value \"88\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String"
-         "Value {:name {:first \"Roberto\"}, :height \"88\"}, at path [:a], did not match predicate 'nil?'."}
+       #{"Expected value \"88\", at path [:a 0 :height], to be an instance of class java.lang.Number, but was java.lang.String"
+         "Value {:name {:first \"Roberto\"}, :height \"88\"}, at path [:a 0], did not match predicate 'nil?'."}
 
 ;;;; nested schemas - no errors
        [[:a :family] family-schema]
@@ -539,10 +540,18 @@
 (deftest test-seq-validation-errors
   (is (= #{}
          (validation-errors (seq-schema :all String) ["a" "b" "c"])))
-  (is (= #{"Expected value :a to be an instance of class java.lang.String, but was clojure.lang.Keyword"
-           "Expected value :b to be an instance of class java.lang.String, but was clojure.lang.Keyword"
-           "Expected value :c to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
+  (is (= #{"Expected value :a, at path [0], to be an instance of class java.lang.String, but was clojure.lang.Keyword"
+           "Expected value :b, at path [1], to be an instance of class java.lang.String, but was clojure.lang.Keyword"
+           "Expected value :c, at path [2], to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
          (validation-errors (seq-schema :all String) [:a :b :c]))))
+
+(deftest test-set-validation-errors
+  (is (= #{}
+         (validation-errors (set-schema String) #{"a" "b" "c"})))
+  (is (= #{"Expected value :a, at path [:*], to be an instance of class java.lang.String, but was clojure.lang.Keyword"
+           "Expected value :b, at path [:*], to be an instance of class java.lang.String, but was clojure.lang.Keyword"
+           "Expected value :c, at path [:*], to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
+         (validation-errors (set-schema String) #{:a :b :c}))))
 
 (deftest test-simple-schemas
   (is (= #{}
@@ -588,7 +597,7 @@
                                                    [1 0 1 0 1 0 1 0]
                                                    [0 1 0 1 0 1 0 1]])))
 
-  (is (= #{"Value 77777 did not match predicate '#{1}'."}
+  (is (= #{"Value 77777, at path [3 5], did not match predicate '#{1}'."}
          (validation-errors checkers-board-schema [[1 0 1 0 1 0 1 0]
                                                    [0 1 0 1 0 1 0 1]
                                                    [1 0 1 0 1 0 1 0]

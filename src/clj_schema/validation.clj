@@ -176,23 +176,23 @@
     (set/union (path-content-errors)
                (extraneous-paths-errors))))
 
-(defn- seq-validation-errors [parent-path schema xs]
-  (let [schema (:schema-spec schema)
-        map-fn (fn [idx x]
-                 (validation-errors *error-reporter* parent-path schema x))]
-    (->> (map-indexed map-fn xs)
-         (apply concat)
-         set)))
+(defn- coll-validation-errors [path-idx-fn parent-path schema xs]
+  (let [schema (:schema-spec schema)]
+    (set (mapcat (fn [idx x]
+                   (validation-errors *error-reporter* (conj parent-path (path-idx-fn idx)) schema x))
+                 (range)
+                 xs))))
+
+(def ^{:private true} set-validation-errors (partial coll-validation-errors (constantly :*)))
+(def ^{:private true} seq-validation-errors (partial coll-validation-errors identity))
 
 (defn- seq-layout-validation-errors [parent-path schema xs]
   (let [layout (:schema-spec schema)]
-    (set (mapcat (fn [schema-x x]
-                   (validation-errors *error-reporter* parent-path schema-x x))
+    (set (mapcat (fn [idx schema-x x]
+                   (validation-errors *error-reporter* (conj parent-path idx) schema-x x))
+                 (range)
                  layout
                  xs))))
-
-(defn- set-validation-errors [parent-path schema xs]
-  (seq-validation-errors parent-path schema xs))
 
 (defn- class-validation-errors [parent-path schema x]
   (let [expected-class (:schema-spec schema)]
