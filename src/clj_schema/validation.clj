@@ -8,13 +8,13 @@
   "Factory functions to generate each type of validation error.
 
    First arg 'state' is a map with 4 keys:
-     :data-under-validation - the map being validated
+     :data-under-validation - the data being validated
      :schema - the schema being used to validate
      :parent-path - the path if any to the current map, from a map that contained this one
      :full-path - the full path in a nested map structure
      :all-wildcard-paths - any path that includes a wildcard
      :schema-without-wildcard-paths - a version of the schema with wildcard paths removed"
-  (constraint-error [this state constraint] "Caused by a constraint predicate failing against the entire map")
+  (constraint-error [this state constraint] "Caused by a constraint predicate failing against the entire data structure or value")
   (extraneous-path-error [this state xtra-path] "Caused by finding a path that doesn't exist in the schema.  This only applies to schemas that are not loose")
   (missing-path-error [this state missing-path] "Caused by not finding a path mentioned in the schema")
   (predicate-fail-error [this state val-at-path pred] "Caused by a predicate validator returning false or nil")
@@ -198,12 +198,19 @@
       #{(predicate-fail-error *error-reporter* (state-map-for-reporter parent-path) x pred)}
       #{})))
 
+(defn- validation-fn [schema]
+  (case (:type schema)
+    :map map-validation-errors
+    :seq seq-validation-errors
+    :set set-validation-errors
+    :class class-validation-errors
+    :or-statement or-statement-validation-errors
+    :and-statement and-statement-validation-errors
+    :predicate predicate-validation-errors))
+
 (defn validation-errors
   "Returns a set of all the validation errors found when comparing a given
-   map m, against the supplied schema.
-
-   A validator is either a schema, predicate, Class or vector of them.
-   See this ns's :doc meta for more details."
+   item x, against the supplied schema."
   ([schema x]
      (validation-errors (StringErrorReporter.) [] schema x))
   ([error-reporter schema x]
@@ -218,14 +225,7 @@
                       (s/simple-schema schema))]
          (if-let [c-errors (seq (constraint-errors))]
            (set c-errors)
-           (case (:type schema)
-             :map (map-validation-errors parent-path schema x)
-             :seq (seq-validation-errors parent-path schema x)
-             :set (set-validation-errors parent-path schema x)
-             :class (class-validation-errors parent-path schema x)
-             :or-statement (or-statement-validation-errors parent-path schema x)
-             :and-statement (and-statement-validation-errors parent-path schema x)
-             :predicate (predicate-validation-errors parent-path schema x)))))))
+           ((validation-fn schema) parent-path schema x))))))
 
 (defn valid?
   "Returns true if calling `validation-errors` would return no errors"
@@ -235,7 +235,7 @@
     (empty? (validation-errors error-reporter schema m))))
 
 (defn validate-and-handle
-  "Validates map m vs a schema.
+  "Validates item x against a schema.
    If it passes, then calls success-handler-fn passing m to it.
    If it fails, then calls error-handler-fn passing m and any validation errors to it."
   ([error-reporter m schema success-handler-fn error-handler-fn]
