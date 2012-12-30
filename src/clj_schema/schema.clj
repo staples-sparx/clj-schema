@@ -231,18 +231,17 @@ map under-validation to have more keys than are specified in the schema."
 
 ;; Wildcard Paths
 
-(defrecord Wildcard [schema])
-
 (defn wildcard?
   "Returns whether x is a wilcard"
   [x]
-  (= Wildcard (class x)))
+  (= true (::wildcard x)))
 
 (defn wild
   "Wraps a schema or simple-schema to be used within a map-schema path as a wildcard.
    Ex. [:a (wild Integer) (wild String)], matches all paths like [:a 1 \"product-1\"] or [:a 42 \"product-2\"]"
   [schema]
-  (Wildcard. schema))
+  {::wildcard true
+   :schema schema})
 
 (defn wildcard-path?
   "Returns whether or not a path is a wildcard-path"
