@@ -17,7 +17,7 @@
   (constraint-error [this state constraint] "Caused by a constraint predicate failing against the entire data structure or value")
   (extraneous-path-error [this state xtra-path] "Caused by finding a path that doesn't exist in the schema.  This only applies to schemas that are not loose")
   (missing-path-error [this state missing-path] "Caused by not finding a path mentioned in the schema")
-  (predicate-fail-error [this state val-at-path pred] "Caused by a predicate validator returning false or nil")
+  (predicate-fail-error [this state val-at-path pred] "Caused by a predicate schema returning false or nil")
   (instance-of-fail-error [this state val-at-path expected-class] "Caused by the value not being the expected Class, and not being a subtype of the expected Class"))
 
 (deftype StringErrorReporter []
@@ -65,14 +65,14 @@
 (defn- wildcard-path->concrete-paths [m [path-first & path-rest :as the-wildcard-path]]
   (if (empty? the-wildcard-path)
     [[]]
-    (let [keys-that-match-validator (if (s/wildcard-validator? path-first)
-                                      (filter #(valid? (:validator path-first) %) (safe-keys m))
+    (let [keys-that-match-schema (if (s/wildcard? path-first)
+                                      (filter #(valid? (:schema path-first) %) (safe-keys m))
                                       [path-first])]
-      (for [k-that-matches-validator keys-that-match-validator
-            one-of-the-concrete-path-ends (wildcard-path->concrete-paths (get m k-that-matches-validator) path-rest)]
-        (vec (cons k-that-matches-validator one-of-the-concrete-path-ends))))))
+      (for [k-that-matches-schema keys-that-match-schema
+            one-of-the-concrete-path-ends (wildcard-path->concrete-paths (get m k-that-matches-schema) path-rest)]
+        (vec (cons k-that-matches-schema one-of-the-concrete-path-ends))))))
 
-(defn- errors-for-concrete-path [schema-path validator]
+(defn- errors-for-concrete-path [schema-path schema]
   (let [val-at-path (get-in *data-under-validation* schema-path ::not-found)
         contains-path? (not= ::not-found val-at-path)
         full-path (into *parent-path* schema-path)]
@@ -83,21 +83,21 @@
           [(missing-path-error *error-reporter* (state-map-for-reporter full-path) full-path)]
           
           :else
-          (validation-errors *error-reporter* full-path validator val-at-path))))
+          (validation-errors *error-reporter* full-path schema val-at-path))))
 
-(defn- errors-for-possibly-wildcard-path [schema-path validator]
+(defn- errors-for-possibly-wildcard-path [schema-path schema]
   (if (s/wildcard-path? schema-path)
     (let [concrete-paths (wildcard-path->concrete-paths *data-under-validation* schema-path)
           ;; TODO ALex - Sep 15, 2012 - this is here because metadata lost - add abstraction to keep metadata for schemas across a translation
           concrete-paths (if (s/optional-path? schema-path) (map s/optional-path concrete-paths) concrete-paths)]
-      (mapcat #(errors-for-concrete-path % validator) concrete-paths))
-    (errors-for-concrete-path schema-path validator)))
+      (mapcat #(errors-for-concrete-path % schema) concrete-paths))
+    (errors-for-concrete-path schema-path schema)))
 
 
 (defn- path-content-errors []
   (->> (s/schema-rows *schema*)
-       (mapcat (fn [[schema-path validator]]
-                 (errors-for-possibly-wildcard-path schema-path validator)))
+       (mapcat (fn [[schema-path schema]]
+                 (errors-for-possibly-wildcard-path schema-path schema)))
        set))
 
 (defn- shorten-to-schema-path-set
@@ -130,8 +130,8 @@
           (zero? path-to-check-count)
           true
 
-          (s/wildcard-validator? wildcard-first)
-          (if (valid? (:validator wildcard-first) path-first)
+          (s/wildcard? wildcard-first)
+          (if (valid? (:schema wildcard-first) path-first)
             (covered-by-wildcard-path? path-rest wildcard-rest)
             false)
 
@@ -163,9 +163,9 @@
                (extraneous-paths-errors))))
 
 (defn- seq-validation-errors [parent-path schema xs]
-  (let [validator (:schema-spec schema)
+  (let [schema (:schema-spec schema)
         map-fn (fn [idx x]
-                 (validation-errors *error-reporter* parent-path validator x))]
+                 (validation-errors *error-reporter* parent-path schema x))]
     (->> (map-indexed map-fn xs)
          (apply concat)
          set)))
@@ -180,17 +180,17 @@
       #{})))
 
 (defn- or-statement-validation-errors [parent-path schema x]
-  (let [validators (:schema-spec schema)
-        error-msg-batches (map #(validation-errors *error-reporter* parent-path % x) validators)
+  (let [schemas (:schema-spec schema)
+        error-msg-batches (map #(validation-errors *error-reporter* parent-path % x) schemas)
         error-msgs        (set (apply concat error-msg-batches))]
     (if-not (< (count (remove empty? error-msg-batches))
-               (count validators))
+               (count schemas))
       error-msgs
       #{})))
 
 (defn- and-statement-validation-errors [parent-path schema x]
-  (let [validators (:schema-spec schema)]
-    (set (mapcat #(validation-errors *error-reporter* parent-path % x) validators))))
+  (let [schemas (:schema-spec schema)]
+    (set (mapcat #(validation-errors *error-reporter* parent-path % x) schemas))))
 
 (defn- predicate-validation-errors [parent-path schema x]
   (let [pred (:schema-spec schema)]
@@ -210,7 +210,8 @@
 
 (defn validation-errors
   "Returns a set of all the validation errors found when comparing a given
-   item x, against the supplied schema."
+   item x, against the supplied schema.
+   If schema is not already a schema, it will attempt to make a simple schema from it."
   ([schema x]
      (validation-errors (StringErrorReporter.) [] schema x))
   ([error-reporter schema x]

@@ -2,10 +2,10 @@
   (:use clj-schema.fixtures
         clojure.test)
   (:require [clj-schema.schema :as schema]
-            [clj-schema.validators :as v]))
+            [clj-schema.simple-schemas :as ss]))
 
 (schema/def-map-schema person-schema
-  [[:name] v/NonEmptyString
+  [[:name] ss/NonEmptyString
    [:height] Number])
 
 (def fixture-1 (fixture person-schema {:name "Roberto"

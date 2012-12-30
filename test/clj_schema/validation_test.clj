@@ -23,7 +23,7 @@
 
        ;;
 
-;;;; One validator per path
+;;;; One simple-schema per path
 
        [[:a] number?]
        {:a 1}
@@ -87,12 +87,12 @@
          "Map did not contain expected path [:z :z :top]."
          "Value 99, at path [:x :y], did not match predicate 'neg?'." }
 
-;;;; when using 'sequence-of' validator is applied against each element in the sequence at that key
+;;;; when using 'sequence-of' schema is applied against each element in the sequence at that key
        [[:a] (sequence-of person-schema)]
        {:a [{:name {:first "Roberto"} :height 11} {:name {:first "Roberto"} :height "11"}]}
        #{"Value \"11\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
 
-;;;; if the schema path isn't present, and using a schema validator the seq, we get a "not present" error
+;;;; if the schema path isn't present, and using a schema the seq, we get a "not present" error
        [[:a] (sequence-of person-schema)]
        {:not-a [{:name {:first "Roberto"} :height 34} {:name {:first "Roberto"} :height "34"}]}
        #{"Map did not contain expected path [:a]."
@@ -108,7 +108,7 @@
        {:a [{:name {:first "Roberto"} :height 70} {:name {:first "Roberto"} :height "70"}]}
        #{"Value \"70\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
 
-;;;; you can mix types of validators: preds with schemas
+;;;; you can mix types of simple-schemas: preds with schemas
        [[:a] (sequence-of [first-name-bob? person-schema])]
        {:a [{:name {:first "Roberto"} :height 44} {:name {:first "Chris"} :height "4a"}]}
        #{"Value \"4a\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"
@@ -122,7 +122,7 @@
          "Value :Roberto at path [:a :name :first] expected class java.lang.String, but was clojure.lang.Keyword"
          "Path [:a :height] was not specified in the schema."}
 
-;;;; validator on right of schema, can be made an or, and can work with both preds and schemas mixed
+;;;; schema on right of schema, can be made an or, and can work with both preds and schemas mixed
        [[:a] [:or nil? person-schema]]
        {:a nil}
        #{}
@@ -228,12 +228,12 @@
        {:a 1}
        #{"At path [:a], constraint failed. Expected '((fn [m] (or (nil? m) (sequential? m))) 1)' to be true, but was false."}
 
-;;;; nil is an acceptable value for a 'sequence-of' validator
+;;;; nil is an acceptable value for a 'sequence-of' schema
        [[:a] (sequence-of integer?)]
        {:a nil}
        #{}
 
-;;;; sequence-of can be used from within other nested validators -- [:a] is single item
+;;;; sequence-of can be used from within other nested simple-schemas -- [:a] is single item
        [[:a] [:or Number (sequence-of Number)]]
        {:a 4}
        #{}
@@ -253,12 +253,12 @@
        {:a 1}
        #{"At path [:a], constraint failed. Expected '((fn [m] (or (nil? m) (set? m))) 1)' to be true, but was false."}
 
-;;;; nil is an acceptable value for a 'set-of' validator
+;;;; nil is an acceptable value for a 'set-of' schema
        [[:a] (set-of integer?)]
        {:a nil}
        #{}
 
-;;;; set-of can be used from within other nested validators -- #{:a} is single item
+;;;; set-of can be used from within other nested simple-schemas -- #{:a} is single item
        [[:a] [:or Number (set-of Number)]]
        {:a 4}
        #{}
@@ -278,7 +278,7 @@
         :b "oops"}
        #{"Path [:b] was not specified in the schema."}
 
-;;;; can use Classes as a validator
+;;;; can use Classes as a schema
        [[:a] String]
        {:a "Roberto"}
        #{}
@@ -316,13 +316,13 @@
        {:a {"b" :b "c" "letter c"}}
        #{"Value :b at path [:a \"b\"] expected class java.lang.String, but was clojure.lang.Keyword"}
 
-       ;; can use 'and statements' in validators
+       ;; can use 'and statements' in simple-schemas
        [[:a (wild [String #{"baz" "qux"}])] String]
        {:a {"baz" :b "c" "letter c"}}
        #{"Value :b at path [:a \"baz\"] expected class java.lang.String, but was clojure.lang.Keyword"
          "Path [:a \"c\"] was not specified in the schema."}
 
-       ;; if no keys of the leaf-map match the wildcard-validator, that is OK
+       ;; if no keys of the leaf-map match the wildcard, that is OK
        [[:a (wild string?)] String]
        {:a {999 :boom}}
        #{"Path [:a 999] was not specified in the schema."}
@@ -404,7 +404,7 @@
        #{"Path [:data :b] was not specified in the schema."}
 
 
-       ;; [Issue #1] - Can AND a sequential with a single item validator
+       ;; [Issue #1] - Can AND a sequential with a single item schema
        [[:a] [empty? (sequence-of String)]]
        {:a []}
        #{}
@@ -468,7 +468,7 @@
          [:a :any-keyword :c :any-keyword]
          [[:a :any-keyword :c :any-keyword]]
 
-         ;; shortest wildcard validator works -- important test don't remove
+         ;; shortest wildcard works -- important test don't remove
          {:a 1}
          [(wild keyword?)]
          [[:a]]

@@ -35,7 +35,7 @@ map under-validation to have more keys than are specified in the schema."
 (defn schema-rows
   "Only makes sense to call on a map-schema.
    Returns a sequence of pairs, where the first element is the
-path and the second element is the validator"
+   path and the second element is the schema that applies to that path."
   [schema]
   (partition 2 (:schema-spec schema)))
 
@@ -58,7 +58,7 @@ path and the second element is the validator"
        (every? constraint? x)))
 
 
-;;; Schemas For Arbitrary Data Structures or Values
+;;; Schemas For Arbitrary Data Structures or Values: Simple Schemas
 
 (defn class-schema
   "Creates a schema that states the item should be
@@ -168,13 +168,13 @@ path and the second element is the validator"
 
 (defn seq-schema
   "Creates a schema for a sequence. Every element of the sequence should match
-   the given validator.
+   the given schema.
    Accepts constraints that are applied to the whole sequence."
   [& constraints-and-schema-specs]
   (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-specs))
-        validator (first (remove constraints? constraints-and-schema-specs))]
+        schema (first (remove constraints? constraints-and-schema-specs))]
     {:type :seq
-     :schema-spec validator
+     :schema-spec schema
      :constraints (concat seq-constraints user-specified-constraints)}))
 
 (defmacro def-seq-schema
@@ -185,13 +185,13 @@ path and the second element is the validator"
 
 (defn set-schema
   "Creates a schema for a set. Every element of the set should match
-   the given validator.
+   the given schema.
    Accepts constraints that are applied to the whole sequence."
   [& constraints-and-schema-specs]
   (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-specs))
-        validator (first (remove constraints? constraints-and-schema-specs))]
+        schema (first (remove constraints? constraints-and-schema-specs))]
     {:type :set
-     :schema-spec validator
+     :schema-spec schema
      :constraints (concat set-constraints user-specified-constraints)}))
 
 (defmacro def-set-schema
@@ -201,31 +201,31 @@ path and the second element is the validator"
        (alter-meta! assoc ::schema true)))
 
 
-;; Validator Modifiers
+;; Wildcard Paths
 
-(def ^{:doc "Wraps a validator to make it a validator that apply to every element of a sequential"}
+(def ^{:doc "Wraps a schema to make it a schema that apply to every element of a sequential"}
   sequence-of seq-schema)
 
-(def ^{:doc "Wraps a validator to make it a validator that apply to every element of a set"}
+(def ^{:doc "Wraps a schema to make it a schema that apply to every element of a set"}
   set-of set-schema)
 
-(defrecord WildcardValidator [validator])
+(defrecord Wildcard [schema])
 
-(defn wildcard-validator?
-  "Returns whether a validator is a wilcard"
-  [validator]
-  (= WildcardValidator (class validator)))
+(defn wildcard?
+  "Returns whether x is a wilcard"
+  [x]
+  (= Wildcard (class x)))
 
 (defn wild
-  "Wraps a validator to be used within a path as a wildcard.
+  "Wraps a schema or simple-schema to be used within a map-schema path as a wildcard.
    Ex. [:a (wild Integer) (wild String)], matches all paths like [:a 1 \"product-1\"] or [:a 42 \"product-2\"]"
-  [validator]
-  (WildcardValidator. validator))
+  [schema]
+  (Wildcard. schema))
 
 (defn wildcard-path?
   "Returns whether or not a path is a wildcard-path"
   [schema-path]
-  (some wildcard-validator? schema-path))
+  (some wildcard? schema-path))
 
 (defn wildcard-path-set
   "Return the set of all wildcard paths in the schema"
@@ -238,7 +238,7 @@ path and the second element is the validator"
 (defn optional-path
   "Takes a schema path and morphs it into a path that is optional.
    Optional paths may or may not be present on the validated map, but
-   if they are present they must be valid against the given validator."
+   if they are present they must be valid against the given schema."
   [schema-path]
   (vary-meta schema-path assoc ::optional-path true))
 
@@ -257,7 +257,7 @@ path and the second element is the validator"
 
 (defn filter-schema
   "Only makes sense to call on a map-schema.
-   Takes a pred like (fn [[path validator]] ...) and selects all schema rows that match."
+   Takes a pred like (fn [[path schema]] ...) and selects all schema rows that match."
   [pred schema]
   (assoc schema :schema-spec (->> (schema-rows schema)
                                   (filter pred)
@@ -268,21 +268,21 @@ path and the second element is the validator"
   "Only makes sense to call on a map-schema.
    Returns a new schema minus some paths."
   [schema & paths]
-  (filter-schema (fn [[path validator]] (not (contains? (set paths) path)))
+  (filter-schema (fn [[path _]] (not (contains? (set paths) path)))
                      schema))
 
 (defn select-schema-keys
   "Only makes sense to call on a map-schema.
    Returns a new schema with only the paths starting with the specified keys."
   [schema & ks]
-  (filter-schema (fn [[path validator]] (contains? (set ks) (first path)))
+  (filter-schema (fn [[path _]] (contains? (set ks) (first path)))
                       schema))
 
 (defn subtract-wildcard-paths
   "Only makes sense to call on a map-schema..
    Returns a schema that is the same in all respects, except it has none of the wildcard paths."
   [schema]
-  (filter-schema (fn [[path validator]] (not (wildcard-path? path)))
+  (filter-schema (fn [[path _]] (not (wildcard-path? path)))
                       schema))
 
 

@@ -40,7 +40,7 @@
         (str/replace #"_QMARK" "?")
         (str/replace #"_" "-"))))
 
-;;; For validators.clj
+;;; For simple_schemas.clj
 
 (defn parse-long [s]
   (Long/parseLong s))
