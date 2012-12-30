@@ -56,29 +56,7 @@
    :all-wildcard-paths *all-wildcard-paths*
    :schema-without-wildcard-paths *schema-without-wildcard-paths*})
 
-(defn- validator-type [validator]
-  (cond (s/schema? validator) :schema
-        (class? validator) :schema
-        (and (sequential? validator) (= :or (first validator))) :schema
-        (sequential? validator) :schema
-        :else :schema))
-
-(declare validation-errors)
-
-(defmulti ^{:private true} errors-for-path-content (fn [_ validator _] (validator-type validator)))
-
-(defmethod errors-for-path-content :schema [full-path schema val-at-path]
-  (validation-errors *error-reporter* full-path schema val-at-path))
-
-;; TODO - Dec 29, 2012 - move and/or/pred/class behavior into validation-errors, and
-;; remove this :)
-(defn errors-for-content
-  "Validates x against the supplied validator, and returns a set of validation errors."
-  [validator x]
-  (errors-for-path-content [] validator x))
-
-(defn- matches-validator? [validator x]
-  (empty? (errors-for-content validator x)))
+(declare validation-errors valid?)
 
 (defn- safe-keys [x]
   (when (map? x)
@@ -88,7 +66,7 @@
   (if (empty? the-wildcard-path)
     [[]]
     (let [keys-that-match-validator (if (s/wildcard-validator? path-first)
-                                      (filter #(matches-validator? (:validator path-first) %) (safe-keys m))
+                                      (filter #(valid? (:validator path-first) %) (safe-keys m))
                                       [path-first])]
       (for [k-that-matches-validator keys-that-match-validator
             one-of-the-concrete-path-ends (wildcard-path->concrete-paths (get m k-that-matches-validator) path-rest)]
@@ -105,7 +83,7 @@
           [(missing-path-error *error-reporter* (state-map-for-reporter full-path) full-path)]
           
           :else
-          (errors-for-path-content full-path validator val-at-path))))
+          (validation-errors *error-reporter* full-path validator val-at-path))))
 
 (defn- errors-for-possibly-wildcard-path [schema-path validator]
   (if (s/wildcard-path? schema-path)
@@ -153,7 +131,7 @@
           true
 
           (s/wildcard-validator? wildcard-first)
-          (if (matches-validator? (:validator wildcard-first) path-first)
+          (if (valid? (:validator wildcard-first) path-first)
             (covered-by-wildcard-path? path-rest wildcard-rest)
             false)
 
@@ -187,7 +165,7 @@
 (defn- seq-validation-errors [parent-path schema xs]
   (let [validator (:schema-spec schema)
         map-fn (fn [idx x]
-                 (errors-for-path-content parent-path validator x))]
+                 (validation-errors *error-reporter* parent-path validator x))]
     (->> (map-indexed map-fn xs)
          (apply concat)
          set)))
@@ -203,7 +181,7 @@
 
 (defn- or-statement-validation-errors [parent-path schema x]
   (let [validators (:schema-spec schema)
-        error-msg-batches (map #(errors-for-path-content parent-path % x) validators)
+        error-msg-batches (map #(validation-errors *error-reporter* parent-path % x) validators)
         error-msgs        (set (apply concat error-msg-batches))]
     (if-not (< (count (remove empty? error-msg-batches))
                (count validators))
@@ -212,7 +190,7 @@
 
 (defn- and-statement-validation-errors [parent-path schema x]
   (let [validators (:schema-spec schema)]
-    (set (mapcat #(errors-for-path-content parent-path % x) validators))))
+    (set (mapcat #(validation-errors *error-reporter* parent-path % x) validators))))
 
 (defn- predicate-validation-errors [parent-path schema x]
   (let [pred (:schema-spec schema)]
