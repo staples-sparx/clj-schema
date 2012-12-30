@@ -60,7 +60,7 @@
   (cond (s/schema? validator) :schema
         (class? validator) :schema
         (and (sequential? validator) (= :or (first validator))) :schema
-        (sequential? validator) :and-statement
+        (sequential? validator) :schema
         :else :predicate))
 
 (declare validation-errors)
@@ -74,12 +74,6 @@
   (if-not ((u/fn->fn-thats-false-if-throws pred) val-at-path)  ;; keeps us safe from ClassCastExceptions, etc
     [(predicate-fail-error *error-reporter* (state-map-for-reporter full-path) val-at-path pred)]
     []))
-
-(defmethod errors-for-path-content :and-statement [full-path validators val-at-path]
-  (let [error-msgs (mapcat #(errors-for-path-content full-path % val-at-path) validators)]
-    (if-not (zero? (count error-msgs))
-      error-msgs
-      [])))
 
 ;; TODO - Dec 29, 2012 - move and/or/pred/class behavior into validation-errors, and
 ;; remove this :)
@@ -212,14 +206,18 @@
       #{(instance-of-fail-error *error-reporter* (state-map-for-reporter parent-path) x expected-class)}
       #{})))
 
-(defn- or-statement-validation-errors [full-path schema x]
+(defn- or-statement-validation-errors [parent-path schema x]
   (let [validators (:schema-spec schema)
-        error-msg-batches (map #(errors-for-path-content full-path % x) validators)
+        error-msg-batches (map #(errors-for-path-content parent-path % x) validators)
         error-msgs        (set (apply concat error-msg-batches))]
     (if-not (< (count (remove empty? error-msg-batches))
                (count validators))
       error-msgs
       #{})))
+
+(defn- and-statement-validation-errors [parent-path schema x]
+  (let [validators (:schema-spec schema)]
+    (set (mapcat #(errors-for-path-content parent-path % x) validators))))
 
 (defn validation-errors
   "Returns a set of all the validation errors found when comparing a given
@@ -238,7 +236,7 @@
                *parent-path* parent-path]
        (let [schema (if (s/schema? schema)
                       schema
-                      (s/basic-schema schema))]
+                      (s/simple-schema schema))]
          (if-let [c-errors (seq (constraint-errors))]
            (set c-errors)
            (case (:type schema)
@@ -246,7 +244,8 @@
              :seq (seq-validation-errors parent-path schema x)
              :set (set-validation-errors parent-path schema x)
              :class (class-validation-errors parent-path schema x)
-             :or-statement (or-statement-validation-errors parent-path schema x)))))))
+             :or-statement (or-statement-validation-errors parent-path schema x)
+             :and-statement (and-statement-validation-errors parent-path schema x)))))))
 
 (defn valid?
   "Returns true if calling `validation-errors` would return no errors"

@@ -194,7 +194,7 @@ path and the second element is the validator"
   `(-> (def ~name (set-schema ~@constraints-and-schema-specs))
        (alter-meta! assoc ::schema true)))
 
-(defn basic-schema
+(defn simple-schema
   "Makes a simple schema from a supplied Class. TODO, more :)"
   [x]
   (cond (class? x)
@@ -205,6 +205,11 @@ path and the second element is the validator"
         (and (vector? x) (= :or (first x)))
         {:type :or-statement
          :schema-spec (rest x)
+         :constraints []}
+
+        (vector? x)
+        {:type :and-statement
+         :schema-spec x
          :constraints []}))
 
 

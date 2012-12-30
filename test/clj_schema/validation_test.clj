@@ -547,7 +547,7 @@
            "Value :a at path [] expected class java.lang.String, but was clojure.lang.Keyword"}
          (validation-errors (seq-schema String) [:a :b :c]))))
 
-(deftest test-basic-schemas
+(deftest test-simple-schemas
   (is (= #{}
          (validation-errors String "neat")))
   (is (= #{"Value 44 at path [] expected class java.lang.String, but was java.lang.Integer"}
@@ -558,4 +558,10 @@
          (validation-errors [:or String Number] 55)))
   (is (= #{"Value :keyword at path [] expected class java.lang.String, but was clojure.lang.Keyword"
            "Value :keyword at path [] expected class java.lang.Number, but was clojure.lang.Keyword"}
-         (validation-errors [:or String Number] :keyword))))
+         (validation-errors [:or String Number] :keyword)))
+
+  (is (= #{}
+         (validation-errors [Number Long] (long 55))))
+  (is (= #{"Value :keyword at path [] expected class java.lang.Long, but was clojure.lang.Keyword"
+           "Value :keyword at path [] expected class java.lang.Number, but was clojure.lang.Keyword"}
+         (validation-errors [Number Long] :keyword))))
