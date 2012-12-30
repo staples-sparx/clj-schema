@@ -2,8 +2,6 @@
   (:require [clojure.string :as str]))
 
 
-;; TODO: Alex September 1, 2012: replace this whole file with runa.utils.xyz dependency
-
 ;;; for schema.clj
 
 (defn paths

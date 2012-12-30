@@ -37,3 +37,6 @@
 (def-set-schema my-set-schema
   Number)
 
+(def-simple-schema my-simple-schema
+  String)
+

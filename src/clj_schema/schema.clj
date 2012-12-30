@@ -194,28 +194,55 @@ path and the second element is the validator"
   `(-> (def ~name (set-schema ~@constraints-and-schema-specs))
        (alter-meta! assoc ::schema true)))
 
+(defn class-schema
+  "Creates a schema that states the item should be
+   an instance of the supplied Class."
+  [clazz]
+  {:type :class
+   :schema-spec clazz
+   :constraints []})
+
+(defn or-statement-schema
+  "Creates a schema that states the item should match
+   at least one of the supplied schemas."
+  [schemas]
+  {:type :or-statement
+   :schema-spec schemas
+   :constraints []})
+
+(defn and-statement-schema
+  "Creates a schema that states the item should match
+   ALL of the supplied schemas."
+  [and-statement]
+  {:type :and-statement
+   :schema-spec and-statement
+   :constraints []})
+
+(defn predicate-schema
+  "Creates a schema that states the item should match
+   the supplied predicate."
+  [pred]
+  {:type :predicate
+   :schema-spec pred
+   :constraints []})
+
 (defn simple-schema
-  "Makes a simple schema from a supplied xyz TODO, more :)"
+  "Makes a simple schema from x.
+   If x is a Class, makes a class-schema.
+   If x looks like [:or x y], makes an or-statement-schema.
+   If x looks like [x y], makes an and-statement-schema.
+   Otherwise, makes a predicate schema."
   [x]
-  (cond (class? x)
-        {:type :class
-         :schema-spec x
-         :constraints []}
+  (cond (class? x) (class-schema x)
+        (and (vector? x) (= :or (first x))) (or-statement-schema (rest x))
+        (vector? x) (and-statement-schema x)
+        :else (predicate-schema x)))
 
-        (and (vector? x) (= :or (first x)))
-        {:type :or-statement
-         :schema-spec (rest x)
-         :constraints []}
-
-        (vector? x)
-        {:type :and-statement
-         :schema-spec x
-         :constraints []}
-
-        :else
-        {:type :predicate
-         :schema-spec x
-         :constraints []}))
+(defmacro def-simple-schema
+  "Creates a named var for a simple-schema.  See `simple-schema` for more details."
+  [name x]
+  `(-> (def ~name (simple-schema ~x))
+       (alter-meta! assoc ::schema true)))
 
 
 ;; Validator Modifiers
