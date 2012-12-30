@@ -200,6 +200,11 @@ path and the second element is the validator"
   (cond (class? x)
         {:type :class
          :schema-spec x
+         :constraints []}
+
+        (and (vector? x) (= :or (first x)))
+        {:type :or-statement
+         :schema-spec (rest x)
          :constraints []}))
 
 

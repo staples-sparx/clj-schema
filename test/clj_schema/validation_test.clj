@@ -542,11 +542,20 @@
 (deftest test-seq-validation-errors
   (is (= #{}
          (validation-errors (seq-schema String) ["a" "b" "c"])))
-  (is (= #{"Value :c at path [] expected class java.lang.String, but was clojure.lang.Keyword" "Value :b at path [] expected class java.lang.String, but was clojure.lang.Keyword" "Value :a at path [] expected class java.lang.String, but was clojure.lang.Keyword"}
+  (is (= #{"Value :c at path [] expected class java.lang.String, but was clojure.lang.Keyword"
+           "Value :b at path [] expected class java.lang.String, but was clojure.lang.Keyword"
+           "Value :a at path [] expected class java.lang.String, but was clojure.lang.Keyword"}
          (validation-errors (seq-schema String) [:a :b :c]))))
 
-(deftest test-basic-schema
+(deftest test-basic-schemas
   (is (= #{}
          (validation-errors String "neat")))
   (is (= #{"Value 44 at path [] expected class java.lang.String, but was java.lang.Integer"}
-         (validation-errors String 44))))
+         (validation-errors String 44)))
+
+  (is (= #{}
+         (validation-errors [:or String Number] "neat")
+         (validation-errors [:or String Number] 55)))
+  (is (= #{"Value :keyword at path [] expected class java.lang.String, but was clojure.lang.Keyword"
+           "Value :keyword at path [] expected class java.lang.Number, but was clojure.lang.Keyword"}
+         (validation-errors [:or String Number] :keyword))))

@@ -59,7 +59,7 @@
 (defn- validator-type [validator]
   (cond (s/schema? validator) :schema
         (class? validator) :schema
-        (and (sequential? validator) (= :or (first validator))) :or-statement
+        (and (sequential? validator) (= :or (first validator))) :schema
         (sequential? validator) :and-statement
         :else :predicate))
 
@@ -78,14 +78,6 @@
 (defmethod errors-for-path-content :and-statement [full-path validators val-at-path]
   (let [error-msgs (mapcat #(errors-for-path-content full-path % val-at-path) validators)]
     (if-not (zero? (count error-msgs))
-      error-msgs
-      [])))
-
-(defmethod errors-for-path-content :or-statement [full-path [_:or_ & validators] val-at-path]
-  (let [error-msg-batches (map #(errors-for-path-content full-path % val-at-path) validators)
-        error-msgs        (apply concat error-msg-batches)]
-    (if-not (< (count (remove empty? error-msg-batches))
-               (count validators))
       error-msgs
       [])))
 
@@ -220,6 +212,15 @@
       #{(instance-of-fail-error *error-reporter* (state-map-for-reporter parent-path) x expected-class)}
       #{})))
 
+(defn- or-statement-validation-errors [full-path schema x]
+  (let [validators (:schema-spec schema)
+        error-msg-batches (map #(errors-for-path-content full-path % x) validators)
+        error-msgs        (set (apply concat error-msg-batches))]
+    (if-not (< (count (remove empty? error-msg-batches))
+               (count validators))
+      error-msgs
+      #{})))
+
 (defn validation-errors
   "Returns a set of all the validation errors found when comparing a given
    map m, against the supplied schema.
@@ -244,7 +245,8 @@
              :map (map-validation-errors parent-path schema x)
              :seq (seq-validation-errors parent-path schema x)
              :set (set-validation-errors parent-path schema x)
-             :class (class-validation-errors parent-path schema x)))))))
+             :class (class-validation-errors parent-path schema x)
+             :or-statement (or-statement-validation-errors parent-path schema x)))))))
 
 (defn valid?
   "Returns true if calling `validation-errors` would return no errors"
