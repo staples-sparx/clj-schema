@@ -9,6 +9,7 @@ Schemas for Clojure Data Structures and Values
 ==============================================
 
 *   [Getting Started](https://github.com/runa-dev/clj-schema/wiki/Getting-Started)
+*   [Google Group](https://groups.google.com/forum/?fromgroups#!forum/clj-schema)
 
 
 Map Schemas
@@ -48,7 +49,7 @@ Example Schema:
    (optional-path [:z]) (sequence-of string?) 
    [:a b :d] (map-schema :loose [[:cat :name] String ;; can use Java Class objects directly 
    [:cat :colors] (set-of String)])]
-```
+   ```
 
 Example schema w/ wildcard paths:
 
