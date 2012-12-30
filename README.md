@@ -240,21 +240,28 @@ You can also add constraints: predicates that apply to the entire
 data structure under validation:
 
 ```clj
-(def-map-schema :loose my-map-schema
-  (constraints sorted?
-               (comp even? count keys))
-  [[:a] String])
+(def-map-schema :loose sorted-unique
+  (constraints sorted? (fn [m] (= (count (keys m)) 
+                                  (count (distinct (keys m))))))
+  [[:id] String])
 
-;; Here every element of the sequence must be a Long
-(def-seq-schema my-seq-schema
-  (constraints vector? 
-               #(< 10 (count %)))
-  Long)  
+;; A checkerboard schema, describing an 8x8 seq of seqs, 
+;; that contains only 1's and 0's.
+(def black-square #(= 0 %))
+(def white-square #(= 1 %))
 
-;; and here every element of the set must be a number
-(def-set-schema my-seq-schema
-  (constraints #(< 10 (count %)))
-  Number)  
+(def-seq-schema checkers-row
+  (constraints (fn [row] (= 8 (count row))))
+  [:or white-square black-square])  
+
+(def-seq-schema checkers-board
+  (constraints (fn [row] (= 8 (count row))))
+  checkers-row-schema)
+
+;; and for all your marble-based apps:
+(def-set-schema bag-of-marbles
+  (constraints #(> 50 (count %)))
+  (OneOf :red :blue :green :yellow :striped :polka-dot :black :white))  
 ```
 
 
