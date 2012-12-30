@@ -5,33 +5,35 @@ To Use
 [org.clojars.runa/clj-schema "0.7.2"]
 ```
 
-Schemas for Clojure Maps
-========================
+Schemas for Clojure Data Structures and Values
+==============================================
 
 *   [Getting Started](https://github.com/runa-dev/clj-schema/wiki/Getting-Started)
 
-Define validation schemas for validating maps.
 
-Schemas are any number of paths through a nested map, paired with a
-validator.
+Map Schemas
+===========
 
-There are 5 types of validators: 
+Map schemas are defined with any number of paths through a nested map, paired
+with another schema to check it.
+
+There are 5 types of sub-schemas:
 
 *   any predicate function 
 *   any `Class` object, i.e. `String`, `clojure.lang.Keyword`, `java.util.Date`, etc 
-*   any clj-schema schema 
-*   `[validator1 validator2]` to indicate both validator1 AND validator2 
-*   `[:or validator1 validator2]` to indicate both validator1 OR validator2
+*   any clj-schema schema: def-map-schema, def-seq-schema, def-set-schema, def-simple-schema, etc
+*   `[schema1 schema2]` to indicate both schema1 AND schema2 
+*   `[:or schema1 schema2]` to indicate both schema1 OR schema2
 
-Any validator may be wrapped in sequence-of to indicate the value should
-be sequential, or wrapped in set-of to indicate the value is a set. By
+Any schema may be wrapped in `sequence-of` to indicate the value should
+be sequential, or wrapped in `set-of` to indicate the value is a set. By
 default, schemas assume the value at a path to be a singular value.
 
 A path may be marked as an `optional-path`. This means that is doesn't
-have to be present, but if it is, it must match the given validator.
+have to be present, but if it is, it must match the given schema.
 
 Wildcard paths are paths where one or more peices are defined as anything
-matching a given validator.
+matching a given schema.
 
 Example Schema:
 
@@ -67,7 +69,7 @@ Example schema w/ wildcard paths:
 {:a {}}
 ```
 
-You can combine more than one schema into a combined schema like this:
+You can combine more than one map schema into a combined schema like this:
 
 ```clj
 (def-map-schema bar-schema
@@ -76,7 +78,7 @@ You can combine more than one schema into a combined schema like this:
    [:baz] #(re-matches #".*baz.*" %)])
 ```
 
-Schemas are just maps:
+All schemas are just maps:
 
 ```clj
 (def-map-schema foo-schema [[:a] String])
@@ -94,6 +96,38 @@ As you can see in the example above, `def-map-schema` creates a strict schema by
 present but does not complain about extra paths
 
 Map schemas can be altered to be loose or strict using `as-loose-schema` or `as-strict-schema`
+
+
+Seq and Set Validation and Introducing Constraints
+==================================================
+
+You can also add constraints: predicates that apply to the entire
+data structure under validation:
+
+```clj
+(def-map-schema :loose sorted-unique
+  (constraints sorted? (fn [m] (= (count (keys m))
+                                  (count (distinct (keys m))))))
+  [[:id] String])
+
+;; A checkerboard schema, describing an 8x8 seq of seqs,
+;; that contains only 1's and 0's.
+(def black-square #(= 0 %))
+(def white-square #(= 1 %))
+
+(def-seq-schema checkers-row
+  (constraints (fn [row] (= 8 (count row))))
+  [:or white-square black-square])
+
+(def-seq-schema checkers-board
+  (constraints (fn [row] (= 8 (count row))))
+  checkers-row-schema)
+
+;; and for all your marble-based apps:
+(def-set-schema bag-of-marbles
+  (constraints #(> 50 (count %)))
+  (OneOf :red :blue :green :yellow :striped :polka-dot :black :white))
+```
 
 
 Map Validation Using Schemas
@@ -233,37 +267,6 @@ These should probably be renamed to something less confusing. Any ideas?
     {:height length :width length}))
 ```
 
-Seq and Set Validation and Introducing Constraints
-==================================================
-
-You can also add constraints: predicates that apply to the entire 
-data structure under validation:
-
-```clj
-(def-map-schema :loose sorted-unique
-  (constraints sorted? (fn [m] (= (count (keys m)) 
-                                  (count (distinct (keys m))))))
-  [[:id] String])
-
-;; A checkerboard schema, describing an 8x8 seq of seqs, 
-;; that contains only 1's and 0's.
-(def black-square #(= 0 %))
-(def white-square #(= 1 %))
-
-(def-seq-schema checkers-row
-  (constraints (fn [row] (= 8 (count row))))
-  [:or white-square black-square])  
-
-(def-seq-schema checkers-board
-  (constraints (fn [row] (= 8 (count row))))
-  checkers-row-schema)
-
-;; and for all your marble-based apps:
-(def-set-schema bag-of-marbles
-  (constraints #(> 50 (count %)))
-  (OneOf :red :blue :green :yellow :striped :polka-dot :black :white))  
-```
-
 
 Validated Compojure Routes
 ==========================
@@ -276,11 +279,11 @@ recommend you check it out.
 ;; Example:
 (:require [checked-route.route :as checked]
           [clj-schema.schema :as sch]
-          [clj-schema.validation :as val]
-          [clj-schema.validators :as v])
-
-(def-map-schema user-params-schema 
-  [[:name] v/NonEmptyString])
+          [clj-schema.simple-schemas :as ss]
+          [clj-schema.validation :as val])
+          
+(def-map-schema user-params-schema
+  [[:name] ss/NonEmptyString])
 
 (checked/POST "/user" {^{:check #(val/validation-errors user-params-schema %)} params :params}
   (do-something params))
