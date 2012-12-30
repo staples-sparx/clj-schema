@@ -19,7 +19,7 @@
        nil             nil         #{}
        []              nil         #{}
 
-       family-schema [[:a] 2 [:b] 4] #{"Constraint failed. Expected '((fn [m] (or (nil? m) (map? m))) [[:a] 2 [:b] 4])' to be true, but was false."}
+       family-schema [[:a] 2 [:b] 4] #{"Constraint failed. Did not pass predicate '(fn [m] (or (nil? m) (map? m)))'"}
 
        ;;
 
@@ -220,12 +220,12 @@
 ;;;; marked as 'sequence-of' but only one value - causes an error
        [[:a] (sequence-of person-schema)]
        {:a {:name {:first "Roberto"} :height "76"}}
-       #{"At path [:a], constraint failed. Expected '((fn [m] (or (nil? m) (sequential? m))) {:name {:first \"Roberto\"}, :height \"76\"})' to be true, but was false."}
+       #{"At parent path [:a], constraint failed. Did not pass predicate '(fn [m] (or (nil? m) (sequential? m)))'"}
 
 ;;;; using 'sequence-of' with an 'Number' class - means there is a seq of numbers
        [[:a] (sequence-of Number)]
        {:a 1}
-       #{"At path [:a], constraint failed. Expected '((fn [m] (or (nil? m) (sequential? m))) 1)' to be true, but was false."}
+       #{"At parent path [:a], constraint failed. Did not pass predicate '(fn [m] (or (nil? m) (sequential? m)))'"}
 
 ;;;; nil is an acceptable value for a 'sequence-of' schema
        [[:a] (sequence-of integer?)]
@@ -245,12 +245,12 @@
 ;;;; marked as 'set-of' but only one value - causes an error
        [[:a] (set-of person-schema)]
        {:a {:name {:first "Roberto"} :height "76"}}
-       #{"At path [:a], constraint failed. Expected '((fn [m] (or (nil? m) (set? m))) {:name {:first \"Roberto\"}, :height \"76\"})' to be true, but was false."}
+       #{"At parent path [:a], constraint failed. Did not pass predicate '(fn [m] (or (nil? m) (set? m)))'"}
 
 ;;;; using 'set-of' with an 'Number' predicate - means there is a set of numbers
        [[:a] (set-of Number)]
        {:a 1}
-       #{"At path [:a], constraint failed. Expected '((fn [m] (or (nil? m) (set? m))) 1)' to be true, but was false."}
+       #{"At parent path [:a], constraint failed. Did not pass predicate '(fn [m] (or (nil? m) (set? m)))'"}
 
 ;;;; nil is an acceptable value for a 'set-of' schema
        [[:a] (set-of integer?)]
@@ -419,10 +419,8 @@
   (let [errors (validation-errors schema-with-constraints {:a "string"
                                                            :b 99
                                                            :extra 47})]
-    (is (or (= #{"Constraint failed. Expected '((fn [m] (even? (count (keys m)))) {:extra 47, :a \"string\", :b 99})' to be true, but was false." "Constraint failed. Expected '((comp even? count distinct vals) {:extra 47, :a \"string\", :b 99})' to be true, but was false."}
-               errors)
-            (= #{"Constraint failed. Expected '((fn [m] (even? (count (keys m)))) {:a \"string\", :b 99, :extra 47})' to be true, but was false." "Constraint failed. Expected '((comp even? count distinct vals) {:a \"string\", :b 99, :extra 47})' to be true, but was false."}
-               errors))))
+    (is (= #{"Constraint failed. Did not pass predicate '(fn [m] (even? (count (keys m))))'" "Constraint failed. Did not pass predicate '(comp even? count distinct vals)'"}
+          errors)))
 
   (is (= #{} (validation-errors schema-with-constraints {:a "string"
                                                          :b 99}))))
@@ -581,7 +579,7 @@
                                                    [1 0 1 0 1 0 1 0]
                                                    [0 1 0 1 0 1 0 1]])))
 
-  (is (= #{"Constraint failed. Expected '((fn [xs] (= (count seq-layout) (count xs))) [[0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1]])' to be true, but was false."}
+  (is (= #{"Constraint failed. Did not pass predicate '(fn [xs] (= (count seq-layout) (count xs)))'"}
          (validation-errors checkers-board-schema [[0 1 0 1 0 1 0 1]
                                                    [1 0 1 0 1 0 1 0]
                                                    [0 1 0 1 0 1 0 1]
@@ -606,21 +604,21 @@
 
   (is (= #{}
          (validation-errors unsorted-non-empty-map {:a 1})))
-  (is (= #{"Constraint failed. Expected '((complement empty?) {})' to be true, but was false."}
+  (is (= #{"Constraint failed. Did not pass predicate '(complement empty?)'"}
          (validation-errors unsorted-non-empty-map {})))
-  (is (= #{"Constraint failed. Expected '((fn [m] (not (sorted? m))) {:a 1})' to be true, but was false."}
+  (is (= #{"Constraint failed. Did not pass predicate '(fn [m] (not (sorted? m)))'"}
          (validation-errors unsorted-non-empty-map (sorted-map :a 1))))
 
   (is (= #{}
          (validation-errors red-list (list :red :red))))
-  (is (= #{"Constraint failed. Expected '((fn [xs] (even? (count xs))) (:red :red :red))' to be true, but was false."}
+  (is (= #{"Constraint failed. Did not pass predicate '(fn [xs] (even? (count xs)))'"}
          (validation-errors red-list (list :red :red :red))))
-  (is (= #{"Constraint failed. Expected '(list? [:red :red])' to be true, but was false."}
+  (is (= #{"Constraint failed. Did not pass predicate 'list?'"}
          (validation-errors red-list (vector :red :red))))
 
   (is (= #{}
          (validation-errors red-set (sorted-set :red :RED))))
-  (is (= #{"Constraint failed. Expected '((fn [xs] (even? (count xs))) #{:RED :Red :red})' to be true, but was false."}
+  (is (= #{"Constraint failed. Did not pass predicate '(fn [xs] (even? (count xs)))'"}
          (validation-errors red-set (sorted-set :red :RED :Red))))
-  (is (= #{"Constraint failed. Expected '(sorted? #{:red :RED})' to be true, but was false."}
+  (is (= #{"Constraint failed. Did not pass predicate 'sorted?'"}
          (validation-errors red-set (hash-set :red :RED)))))

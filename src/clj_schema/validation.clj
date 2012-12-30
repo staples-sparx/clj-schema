@@ -29,9 +29,9 @@
   ErrorReporter
   (constraint-error [_ {:keys [parent-path data-under-validation]} constraint]
     (if (empty? parent-path)
-      (format "Constraint failed. Expected '(%s %s)' to be true, but was false."
+      (format "Constraint failed. Did not pass predicate '%s'"
               (:source constraint) (pr-str data-under-validation))
-      (format "At path %s, constraint failed. Expected '(%s %s)' to be true, but was false."
+      (format "At parent path %s, constraint failed. Did not pass predicate '%s'"
               parent-path (:source constraint) (pr-str data-under-validation))))
   
   (extraneous-path-error [_ _ xtra-path]
