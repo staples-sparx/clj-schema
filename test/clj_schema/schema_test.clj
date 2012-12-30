@@ -23,14 +23,7 @@
                           [:b] String
                           [:a] Number]
             :constraints map-constraints
-            :strict false}) loose)
-    (is (= {:type :map
-            :schema-spec [[:a] even?
-                          [:b] String
-                          [:a] Number]
-            :constraints map-constraints
-            :strict true}
-           (as-strict-schema loose)))))
+            :strict false}) loose)))
 
 (deftest test-strict-schema-and-as-loose-schema
   (let [strict (map-schema :strict
@@ -42,14 +35,7 @@
                           [:b] String
                           [:a] Number]
             :constraints map-constraints
-            :strict true}) strict)
-    (is (= {:type :map
-            :schema-spec [[:a] even?
-                          [:b] String
-                          [:a] Number]
-            :constraints map-constraints
-            :strict false}
-           (as-loose-schema strict)))))
+            :strict true}) strict)))
 
 (deftest test-def-loose-schema
   (is (= {:type :map
@@ -144,14 +130,6 @@
        #'family-schema schema?
        #'family-schema strict-schema?
        #'family-schema (complement loose-schema?)
-
-       (as-strict-schema (map-schema :loose [[:a] string?])) schema?
-       (as-strict-schema (map-schema :loose [[:a] string?])) strict-schema?
-       (as-strict-schema (map-schema :loose [[:a] string?])) (complement loose-schema?)
-
-       (as-loose-schema (map-schema :strict [[:a] string?])) schema?
-       (as-loose-schema (map-schema :strict [[:a] string?])) loose-schema?
-       (as-loose-schema (map-schema :strict [[:a] string?])) (complement strict-schema?)
 
        #'my-seq-schema schema?
        #'my-set-schema schema?

@@ -1,50 +1,5 @@
-(ns ^{:doc
-      "Define validation schemas for validating maps.
-
-      Schemas are any number of paths through a nested map, paired with a validator.
-
-      There are 5 types of validators:
-      * any predicate function
-      * any Class object, i.e. String, clojure.lang.Keyword, java.util.Date, etc
-      * any clj-schema schema
-      * [validator1 validator2] to indicate both validator1 AND validator2
-      * [:or validator1 validator2] to indicate both validator1 OR validator2
-
-      Any validator may be wrapped in sequence-of to indicate the value should be
-      sequential, or wrapped in set-of to indicate the value is a set. By default,
-      schemas assume the value at a path to be a singular value.
-
-      A path may be marked as an `optional-path`.  This means that is doesn't
-      have to be present, but if it is, it must match the given validator.
-
-      Wildcard paths are paths where one or more peices are defined as anything
-      matching a given validator.
-
-       Example Schema:
-
-      (def-map-schema bar-schema
-       [[:a :b :c] pred
-       [:x :y :z] [pred2 pred3 z-schema] ;; implicit 'and' - all three must pass
-       [:p :q :r] [:or nil? r-schema]    ;; an 'or' statement - need just one to pass
-       (optional-path [:z]) (sequence-of string?)
-       [:a b :d] (map-schema :loose [[:cat :name] String ;; can use Java Class objects directly
-                                     [:cat :colors] (set-of String)])
-      ... ]
-
-     Example schema w/ wildcard paths:
-
-      (def-map-schema foo-schema
-        [[:a (wild String) (wild Number)] String])
-
-      => matches maps such as:
-         {:a {\"car\" {1.21 \"jigawatts\"}}}
-         {:a {\"banana\" {2 \"green\"
-
-      `def-map-schema` creates a strict schema, which expects only the paths it
-      describes to be present on the given map.
-
-      `(def-map-schema :loose [[:a] String])` creates a loose schema, which expects its paths to
-      be present but does not complain about extra paths."}
+(ns ^{:doc "Define schemas for validating maps, sequences, sets or any
+            arbitrary data structures or values."}
   clj-schema.schema
   (:require [clj-schema.internal.utils :as u]
             [clojure.set :as set]))
@@ -60,7 +15,8 @@
         :else false))
 
 (defn strict-schema?
-  "Returns whether a schema is strict.  A strict schema necessitates that
+  "Only makes sense to call on a map-schema.
+   Returns whether a schema is strict.  A strict schema necessitates that
 the map under-validation has all the paths listed in the schema and no extra paths" 
   [x]
   (cond (var? x) (and (schema? x) (::strict (meta x)))
@@ -68,7 +24,8 @@ the map under-validation has all the paths listed in the schema and no extra pat
         :else false))
 
 (defn loose-schema?
-  "Returns whether a schema is loose.  A loose schema allows the
+  "Only makes sense to call on a map-schema.
+   Returns whether a schema is loose.  A loose schema allows the
 map under-validation to have more keys than are specified in the schema."
   [x]
   (cond (var? x) (and (schema? x) (not (::strict (meta x))))
@@ -76,13 +33,15 @@ map under-validation to have more keys than are specified in the schema."
         :else false))
 
 (defn schema-rows
-  "Returns a sequence of pairs, where the first element is the
+  "Only makes sense to call on a map-schema.
+   Returns a sequence of pairs, where the first element is the
 path and the second element is the validator"
   [schema]
   (partition 2 (:schema-spec schema)))
 
 (defn schema-path-set
-  "Returns the set of all paths in the schema."
+  "Only makes sense to call on a map-schema.
+   Returns the set of all paths in the schema."
   [schema]
   (set (take-nth 2 (:schema-spec schema))))
 
@@ -99,23 +58,70 @@ path and the second element is the validator"
        (every? constraint? x)))
 
 
-;;;; Schema Creation
+;;; Schemas For Arbitrary Data Structures or Values
 
-(defn as-loose-schema
-  "Removes :strict-schema true k/v pair from the given schema,
-   making it validate loosely"
-  [schema]
-  (assoc schema :strict false))
+(defn class-schema
+  "Creates a schema that states the item should be
+   an instance of the supplied Class.
+   Can be used for any arbitrary data structure or value."
+  [clazz]
+  {:type :class
+   :schema-spec clazz
+   :constraints []})
 
-(defn as-strict-schema
-  "Adds :strict-schema true k/v pair to the given schema,
-   making it validate strictly"
-  [schema]
-  (assoc schema :strict true))
+(defn or-statement-schema
+  "Creates a schema that states the item should match
+   at least one of the supplied schemas.
+   Can be used for any arbitrary data structure or value."
+  [schemas]
+  {:type :or-statement
+   :schema-spec schemas
+   :constraints []})
+
+(defn and-statement-schema
+  "Creates a schema that states the item should match
+   ALL of the supplied schemas.
+   Can be used for any arbitrary data structure or value."
+  [and-statement]
+  {:type :and-statement
+   :schema-spec and-statement
+   :constraints []})
+
+(defn predicate-schema
+  "Creates a schema that states the item should match
+   the supplied predicate.
+   Can be used for any arbitrary data structure or value."
+  [pred]
+  {:type :predicate
+   :schema-spec pred
+   :constraints []})
+
+(defn simple-schema
+  "Makes a simple schema from x.
+   If x is a Class, makes a class-schema.
+   If x looks like [:or x y], makes an or-statement-schema.
+   If x looks like [x y], makes an and-statement-schema.
+   Otherwise, makes a predicate schema.
+
+   Can be used for any arbitrary data structure or value."
+  [x]
+  (cond (class? x) (class-schema x)
+        (and (vector? x) (= :or (first x))) (or-statement-schema (rest x))
+        (vector? x) (and-statement-schema x)
+        :else (predicate-schema x)))
+
+(defmacro def-simple-schema
+  "Creates a named var for a simple-schema.  See `simple-schema` for more details."
+  [name x]
+  `(-> (def ~name (simple-schema ~x))
+       (alter-meta! assoc ::schema true)))
+
+
+;;;; Schemas for Specific Data Structures
 
 (defmacro constraints
   "Wrap a group of predicates, so that they can be tested against
-   the entire map."
+   the entire data structure in a schema."
   [& pred-sexps]
   (vec (for [ps pred-sexps]
          `{:predicate ~ps
@@ -155,8 +161,8 @@ path and the second element is the validator"
                [looseness name & constraints-and-schema-vectors])}
   (let [[looseness name & constraints-and-schema-vectors] (if (keyword? (first args))
                                                             args
-                                                            (cons :strict args))
-        _ (assert (contains? #{:strict :loose} looseness))]
+                                                            (cons :strict args))]
+    (assert (contains? #{:strict :loose} looseness))
     `(-> (def ~name (map-schema ~looseness ~@constraints-and-schema-vectors))
          (alter-meta! assoc ::schema true ::strict ~(= :strict looseness)))))
 
@@ -192,56 +198,6 @@ path and the second element is the validator"
   "Creates a named var for a set-schema. See `set-schema` for more details."
   [name & constraints-and-schema-specs]
   `(-> (def ~name (set-schema ~@constraints-and-schema-specs))
-       (alter-meta! assoc ::schema true)))
-
-(defn class-schema
-  "Creates a schema that states the item should be
-   an instance of the supplied Class."
-  [clazz]
-  {:type :class
-   :schema-spec clazz
-   :constraints []})
-
-(defn or-statement-schema
-  "Creates a schema that states the item should match
-   at least one of the supplied schemas."
-  [schemas]
-  {:type :or-statement
-   :schema-spec schemas
-   :constraints []})
-
-(defn and-statement-schema
-  "Creates a schema that states the item should match
-   ALL of the supplied schemas."
-  [and-statement]
-  {:type :and-statement
-   :schema-spec and-statement
-   :constraints []})
-
-(defn predicate-schema
-  "Creates a schema that states the item should match
-   the supplied predicate."
-  [pred]
-  {:type :predicate
-   :schema-spec pred
-   :constraints []})
-
-(defn simple-schema
-  "Makes a simple schema from x.
-   If x is a Class, makes a class-schema.
-   If x looks like [:or x y], makes an or-statement-schema.
-   If x looks like [x y], makes an and-statement-schema.
-   Otherwise, makes a predicate schema."
-  [x]
-  (cond (class? x) (class-schema x)
-        (and (vector? x) (= :or (first x))) (or-statement-schema (rest x))
-        (vector? x) (and-statement-schema x)
-        :else (predicate-schema x)))
-
-(defmacro def-simple-schema
-  "Creates a named var for a simple-schema.  See `simple-schema` for more details."
-  [name x]
-  `(-> (def ~name (simple-schema ~x))
        (alter-meta! assoc ::schema true)))
 
 
@@ -297,10 +253,11 @@ path and the second element is the validator"
   (set/select optional-path? (schema-path-set schema)))
 
 
-;; Filtering Schemas
+;; Filtering Map-Schemas
 
 (defn filter-schema
-  "Takes a pred like (fn [[path validator]] ...) and selects all schema rows that match."
+  "Only makes sense to call on a map-schema.
+   Takes a pred like (fn [[path validator]] ...) and selects all schema rows that match."
   [pred schema]
   (assoc schema :schema-spec (->> (schema-rows schema)
                                   (filter pred)
@@ -308,19 +265,22 @@ path and the second element is the validator"
                                   vec)))
 
 (defn subtract-paths
-  "Returns a new schema minus some paths."
+  "Only makes sense to call on a map-schema.
+   Returns a new schema minus some paths."
   [schema & paths]
   (filter-schema (fn [[path validator]] (not (contains? (set paths) path)))
                      schema))
 
 (defn select-schema-keys
-  "Returns a new schema with only the paths starting with the specified keys."
+  "Only makes sense to call on a map-schema.
+   Returns a new schema with only the paths starting with the specified keys."
   [schema & ks]
   (filter-schema (fn [[path validator]] (contains? (set ks) (first path)))
                       schema))
 
 (defn subtract-wildcard-paths
-  "Returns a schema that is the same in all respects, except it has none of the wildcard paths."
+  "Only makes sense to call on a map-schema..
+   Returns a schema that is the same in all respects, except it has none of the wildcard paths."
   [schema]
   (filter-schema (fn [[path validator]] (not (wildcard-path? path)))
                       schema))
@@ -337,8 +297,7 @@ path and the second element is the validator"
 ;;;; Scaffolding
 
 (defn scaffold-schema
-  "Makes a simple scaffolding schema from a given map m.
-   Each path has a validator of Anything."
+  "Makes a simple scaffolding schema from a given map, sequence or set."
   [schema-name x]
   (cond (map? x)
         (list 'def-map-schema (symbol schema-name)
