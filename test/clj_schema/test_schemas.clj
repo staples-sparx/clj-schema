@@ -55,3 +55,23 @@
 (def-seq-schema :layout checkers-board-schema
   [white-row black-row white-row black-row white-row black-row white-row black-row])
 
+
+;;; 
+
+(def-map-schema :loose non-empty-map
+  (constraints (complement empty?)))
+
+(def-map-schema unsorted-non-empty-map
+  non-empty-map
+  [[:a] (OneOf 1)]
+  (constraints (fn [m] (not (sorted? m)))))
+
+(def-seq-schema :all red-list
+  (constraints (fn [xs] (even? (count xs))))
+  (OneOf :red)
+  (constraints list?))
+
+(def-set-schema red-set
+  (constraints (fn [xs] (even? (count xs))))
+  (OneOf :red :RED :Red)
+  (constraints sorted?))

@@ -139,18 +139,21 @@ map under-validation to have more keys than are specified in the schema."
 (defn map-schema
   "Creates a schema for a map. looseness is either :loose or :strict. If :strict
    then, any keys not mentioned in the schema-spec will be errors.
+   Can be supplied other schemas which it will addd behavior to..
    Accepts constraints that are applied to the whole map."
   [looseness & constraints-and-schema-vectors]
   (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-vectors))
-        flattened-schemas (mapcat :schema-spec (filter schema? constraints-and-schema-vectors))
+        schemas (filter schema? constraints-and-schema-vectors)
+        inherited-schema-specs (mapcat :schema-spec schemas)
+        inherited-constraints (mapcat :constraints schemas)
         schema-spec? (fn [x] (and (vector? x) (not (constraints? x))))
         schema-specs (apply concat (filter schema-spec? constraints-and-schema-vectors))
-        flattened-schema-specs (vec (concat flattened-schemas schema-specs))]
+        flattened-schema-specs (vec (concat inherited-schema-specs schema-specs))]
     (assert (even? (count schema-specs)))
     (assert (every? sequential? (schema-path-set {:schema-spec schema-specs})))
     {:type :map
      :schema-spec flattened-schema-specs
-     :constraints (concat map-constraints user-specified-constraints)
+     :constraints (distinct (concat map-constraints inherited-constraints user-specified-constraints))
      :strict (= :strict looseness)}))
 
 (defmacro def-map-schema
@@ -181,12 +184,12 @@ map under-validation to have more keys than are specified in the schema."
     (if (= :layout all-or-layout)
       {:type :seq-layout
        :schema-spec seq-layout
-       :constraints (concat seq-constraints
-                            user-specified-constraints
-                            (constraints (fn [xs] (= (count seq-layout) (count xs)))))}
+       :constraints (distinct (concat seq-constraints
+                                      user-specified-constraints
+                                      (constraints (fn [xs] (= (count seq-layout) (count xs))))))}
       {:type :seq
        :schema-spec schema
-       :constraints (concat seq-constraints user-specified-constraints)})))
+       :constraints (distinct (concat seq-constraints user-specified-constraints))})))
 
 (defmacro def-seq-schema
   "Creates a named var for a seq-schema. See `seq-schema` for more details."

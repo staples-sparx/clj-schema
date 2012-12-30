@@ -600,3 +600,28 @@
                                                    [0 1 0 1 0 1 0 1]
                                                    [1 0 1 0 1 0 1 0]
                                                    [0 1 0 1 0 1 0 1]]))))
+
+(deftest edge-cases-in-schema-construction
+  (is (= #{}
+         (validation-errors non-empty-map {:a 1})))
+
+  (is (= #{}
+         (validation-errors unsorted-non-empty-map {:a 1})))
+  (is (= #{"At path [], constraint failed. Expected '((complement empty?) {})' to be true, but was false."}
+         (validation-errors unsorted-non-empty-map {})))
+  (is (= #{"At path [], constraint failed. Expected '((fn [m] (not (sorted? m))) {:a 1})' to be true, but was false."}
+         (validation-errors unsorted-non-empty-map (sorted-map :a 1))))
+
+  (is (= #{}
+         (validation-errors red-list (list :red :red))))
+  (is (= #{"At path [], constraint failed. Expected '((fn [xs] (even? (count xs))) (:red :red :red))' to be true, but was false."}
+         (validation-errors red-list (list :red :red :red))))
+  (is (= #{"At path [], constraint failed. Expected '(list? [:red :red])' to be true, but was false."}
+         (validation-errors red-list (vector :red :red))))
+
+  (is (= #{}
+         (validation-errors red-set (sorted-set :red :RED))))
+  (is (= #{"At path [], constraint failed. Expected '((fn [xs] (even? (count xs))) #{:RED :Red :red})' to be true, but was false."}
+         (validation-errors red-set (sorted-set :red :RED :Red))))
+  (is (= #{"At path [], constraint failed. Expected '(sorted? #{:red :RED})' to be true, but was false."}
+         (validation-errors red-set (hash-set :red :RED)))))
