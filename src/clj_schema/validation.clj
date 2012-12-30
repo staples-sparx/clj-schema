@@ -65,37 +65,44 @@
 
 (declare validation-errors)
 
-(defmulti ^{:private true} errors-for-path-content #(validator-type %3))
+(defmulti ^{:private true} errors-for-path-content (fn [_ validator _] (validator-type validator)))
 
-(defmethod errors-for-path-content :schema [full-path val-at-path schema]
+(defmethod errors-for-path-content :schema [full-path schema val-at-path]
   (validation-errors *error-reporter* full-path schema val-at-path))
 
-(defmethod errors-for-path-content :class [full-path val-at-path expected-class]
+(defmethod errors-for-path-content :class [full-path expected-class val-at-path]
   (if-not (instance? expected-class val-at-path)
     [(instance-of-fail-error *error-reporter* (state-map-for-reporter full-path) val-at-path expected-class)]
     []))
 
-(defmethod errors-for-path-content :predicate [full-path val-at-path pred]
+(defmethod errors-for-path-content :predicate [full-path pred val-at-path]
   (if-not ((u/fn->fn-thats-false-if-throws pred) val-at-path)  ;; keeps us safe from ClassCastExceptions, etc
     [(predicate-fail-error *error-reporter* (state-map-for-reporter full-path) val-at-path pred)]
     []))
 
-(defmethod errors-for-path-content :and-statement [full-path val-at-path validators]
-  (let [error-msgs (mapcat (partial errors-for-path-content full-path val-at-path) validators)]
+(defmethod errors-for-path-content :and-statement [full-path validators val-at-path]
+  (let [error-msgs (mapcat #(errors-for-path-content full-path % val-at-path) validators)]
     (if-not (zero? (count error-msgs))
       error-msgs
       [])))
 
-(defmethod errors-for-path-content :or-statement [full-path val-at-path [_:or_ & validators]]
-  (let [error-msg-batches (map (partial errors-for-path-content full-path val-at-path) validators)
+(defmethod errors-for-path-content :or-statement [full-path [_:or_ & validators] val-at-path]
+  (let [error-msg-batches (map #(errors-for-path-content full-path % val-at-path) validators)
         error-msgs        (apply concat error-msg-batches)]
     (if-not (< (count (remove empty? error-msg-batches))
                (count validators))
       error-msgs
       [])))
 
+;; TODO - Dec 29, 2012 - move and/or/pred/class behavior into validation-errors, and
+;; remove this :)
+(defn errors-for-content
+  "Validates x against the supplied validator, and returns a set of validation errors."
+  [validator x]
+  (errors-for-path-content [] validator x))
+
 (defn- matches-validator? [validator x]
-  (empty? (errors-for-path-content [] x validator)))
+  (empty? (errors-for-content validator x)))
 
 (defn- safe-keys [x]
   (when (map? x)
@@ -122,7 +129,7 @@
           [(missing-path-error *error-reporter* (state-map-for-reporter full-path) full-path)]
           
           :else
-          (errors-for-path-content full-path val-at-path validator))))
+          (errors-for-path-content full-path validator val-at-path))))
 
 (defn- errors-for-possibly-wildcard-path [schema-path validator]
   (if (s/wildcard-path? schema-path)
@@ -204,7 +211,7 @@
 (defn- seq-validation-errors [parent-path schema xs]
   (let [validator (:schema-spec schema)
         map-fn (fn [idx x]
-                 (errors-for-path-content parent-path x validator))]
+                 (errors-for-path-content parent-path validator x))]
     (->> (map-indexed map-fn xs)
          (apply concat)
          set)))
