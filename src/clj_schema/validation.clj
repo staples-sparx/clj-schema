@@ -28,8 +28,11 @@
 (deftype StringErrorReporter []
   ErrorReporter
   (constraint-error [_ {:keys [parent-path data-under-validation]} constraint]
-    (format "At path %s, constraint failed. Expected '(%s %s)' to be true, but was false."
-            parent-path (:source constraint) (pr-str data-under-validation)))
+    (if (empty? parent-path)
+      (format "Constraint failed. Expected '(%s %s)' to be true, but was false."
+              (:source constraint) (pr-str data-under-validation))
+      (format "At path %s, constraint failed. Expected '(%s %s)' to be true, but was false."
+              parent-path (:source constraint) (pr-str data-under-validation))))
   
   (extraneous-path-error [_ _ xtra-path]
     (format "Path %s was not specified in the schema." xtra-path))
@@ -38,12 +41,18 @@
     (format "Map did not contain expected path %s." missing-path))
   
   (predicate-fail-error [_ {:keys [full-path]} val-at-path pred]
-    (format "Value %s, at path %s, did not match predicate '%s'."
-            (pr-str val-at-path) full-path (u/pretty-fn-str pred)))
+    (if (empty? full-path)
+      (format "Value %s did not match predicate '%s'."
+              (pr-str val-at-path) (u/pretty-fn-str pred))
+      (format "Value %s, at path %s, did not match predicate '%s'."
+              (pr-str val-at-path) full-path (u/pretty-fn-str pred))))
   
   (instance-of-fail-error [_ {:keys [full-path]} val-at-path expected-class]
-    (format "Value %s at path %s expected class %s, but was %s"
-            (pr-str val-at-path) full-path (pr-str expected-class) (pr-str (class val-at-path)))))
+    (if (empty? full-path)
+      (format "Expected value %s to be an instance of class %s, but was %s"
+              (pr-str val-at-path) (pr-str expected-class) (pr-str (class val-at-path)))
+      (format "Expected value %s, at path %s, to be an instance of class %s, but was %s"
+              (pr-str val-at-path) full-path (pr-str expected-class) (pr-str (class val-at-path))))))
 
 ;; used to hold state of one `validation-errors` calculation
 (def ^{:private true :dynamic true} *error-reporter* nil)

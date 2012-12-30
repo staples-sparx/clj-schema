@@ -19,7 +19,7 @@
        nil             nil         #{}
        []              nil         #{}
 
-       family-schema [[:a] 2 [:b] 4] #{"At path [], constraint failed. Expected '((fn [m] (or (nil? m) (map? m))) [[:a] 2 [:b] 4])' to be true, but was false."}
+       family-schema [[:a] 2 [:b] 4] #{"Constraint failed. Expected '((fn [m] (or (nil? m) (map? m))) [[:a] 2 [:b] 4])' to be true, but was false."}
 
        ;;
 
@@ -35,7 +35,7 @@
 
        [[:bb] Integer]
        {:bb "bb"}
-       #{"Value \"bb\" at path [:bb] expected class java.lang.Integer, but was java.lang.String"}
+       #{"Expected value \"bb\", at path [:bb], to be an instance of class java.lang.Integer, but was java.lang.String"}
 
        [[:b :c] Integer]
        {:b "a"}
@@ -44,7 +44,7 @@
 
        [[:b :c] Integer]
        {:b {:c :a}}
-       #{"Value :a at path [:b :c] expected class java.lang.Integer, but was clojure.lang.Keyword"}
+       #{"Expected value :a, at path [:b :c], to be an instance of class java.lang.Integer, but was clojure.lang.Keyword"}
 
        ;;
 
@@ -60,8 +60,8 @@
 
        [[:b] [String Keyword]]
        {:b 1.1}
-       #{"Value 1.1 at path [:b] expected class java.lang.String, but was java.lang.Double"
-         "Value 1.1 at path [:b] expected class clojure.lang.Keyword, but was java.lang.Double"}
+       #{"Expected value 1.1, at path [:b], to be an instance of class java.lang.String, but was java.lang.Double"
+         "Expected value 1.1, at path [:b], to be an instance of class clojure.lang.Keyword, but was java.lang.Double"}
 
        [[:b :c] [number? pos?]]
        {:b "a"}
@@ -70,8 +70,8 @@
 
        [[:b :c] [String Keyword]]
        {:b {:c 1.1}}
-       #{"Value 1.1 at path [:b :c] expected class java.lang.String, but was java.lang.Double"
-         "Value 1.1 at path [:b :c] expected class clojure.lang.Keyword, but was java.lang.Double"}
+       #{"Expected value 1.1, at path [:b :c], to be an instance of class java.lang.String, but was java.lang.Double"
+         "Expected value 1.1, at path [:b :c], to be an instance of class clojure.lang.Keyword, but was java.lang.Double"}
 
        ;;
 
@@ -90,7 +90,7 @@
 ;;;; when using 'sequence-of' schema is applied against each element in the sequence at that key
        [[:a] (sequence-of person-schema)]
        {:a [{:name {:first "Roberto"} :height 11} {:name {:first "Roberto"} :height "11"}]}
-       #{"Value \"11\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
+       #{"Expected value \"11\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String"}
 
 ;;;; if the schema path isn't present, and using a schema the seq, we get a "not present" error
        [[:a] (sequence-of person-schema)]
@@ -106,21 +106,21 @@
 ;;;; `optional-path` has no effect if the schema path is present
        [(optional-path [:a]) (sequence-of person-schema)]
        {:a [{:name {:first "Roberto"} :height 70} {:name {:first "Roberto"} :height "70"}]}
-       #{"Value \"70\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
+       #{"Expected value \"70\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String"}
 
 ;;;; you can mix types of simple-schemas: preds with schemas
        [[:a] (sequence-of [first-name-bob? person-schema])]
        {:a [{:name {:first "Roberto"} :height 44} {:name {:first "Chris"} :height "4a"}]}
-       #{"Value \"4a\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"
-         "Value {:name {:first \"Roberto\"}, :height 44}, at path [:a], did not match predicate 'clj-schema.validation-test/first-name-bob?'."
+       #{"Value {:name {:first \"Roberto\"}, :height 44}, at path [:a], did not match predicate 'clj-schema.validation-test/first-name-bob?'."
+         "Expected value \"4a\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String"
          "Value {:name {:first \"Chris\"}, :height \"4a\"}, at path [:a], did not match predicate 'clj-schema.validation-test/first-name-bob?'."}
 
 ;;;; ...  multiple strict schemas together makes little sense - one schema will think extra keys were not specified by it, though they were by the other schema
        [[:a] (sequence-of [name-schema person-schema])]
        {:a [{:name {:first :Roberto} :height 69} {:name {:first "Roberto"} :height "69"}]}
-       #{"Value \"69\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"
-         "Value :Roberto at path [:a :name :first] expected class java.lang.String, but was clojure.lang.Keyword"
-         "Path [:a :height] was not specified in the schema."}
+       #{"Path [:a :height] was not specified in the schema."
+         "Expected value \"69\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String"
+         "Expected value :Roberto, at path [:a :name :first], to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
 
 ;;;; schema on right of schema, can be made an or, and can work with both preds and schemas mixed
        [[:a] [:or nil? person-schema]]
@@ -130,18 +130,18 @@
 ;;;; you can have just one thing in the ':or' - but please don't it is weird
        [[:a] (sequence-of [:or person-schema])]
        {:a [{:name {:first "Roberto"} :height "76"}]}
-       #{"Value \"76\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
+       #{"Expected value \"76\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String"}
 
 ;;;; when both :or options fail - see errors for both 'nil?' and 'person-schema'
        [[:a] [:or nil? person-schema]]
        {:a {:name {:first "Roberto"} :height "66"}}
-       #{"Value {:name {:first \"Roberto\"}, :height \"66\"}, at path [:a], did not match predicate 'nil?'."
-         "Value \"66\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"}
+       #{"Expected value \"66\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String"
+         "Value {:name {:first \"Roberto\"}, :height \"66\"}, at path [:a], did not match predicate 'nil?'."}
 
 ;;;; or collects all failures in the sequence being checked
        [[:a] (sequence-of [:or nil? person-schema])]
        {:a [{:name {:first "Roberto"} :height "88"} {:name {:first "Roberto"} :height 88}]}
-       #{"Value \"88\" at path [:a :height] expected class java.lang.Number, but was java.lang.String"
+       #{"Expected value \"88\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String"
          "Value {:name {:first \"Roberto\"}, :height \"88\"}, at path [:a], did not match predicate 'nil?'."}
 
 ;;;; nested schemas - no errors
@@ -158,9 +158,8 @@
                            :height 42}
                      :dad {:name {:first "Stanley"}
                            :height :53}}}}
-       #{"Value :53 at path [:a :family :dad :height] expected class java.lang.Number, but was clojure.lang.Keyword"
-         "Value :Theresa at path [:a :family :mom :name :first] expected class java.lang.String, but was clojure.lang.Keyword"
-         }
+       #{"Expected value :Theresa, at path [:a :family :mom :name :first], to be an instance of class java.lang.String, but was clojure.lang.Keyword"
+         "Expected value :53, at path [:a :family :dad :height], to be an instance of class java.lang.Number, but was clojure.lang.Keyword"}
 
 ;;;; strict schemas fail if there are more keys than specified
        [[:a :family] family-schema]
@@ -285,7 +284,7 @@
 
        [[:a] String]
        {:a :Roberto}
-       #{"Value :Roberto at path [:a] expected class java.lang.String, but was clojure.lang.Keyword"}
+       #{"Expected value :Roberto, at path [:a], to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
 
        ;; instance-of? satisfies the predicate -- Long is an instance of Number
        [[:a] Number]
@@ -303,7 +302,7 @@
        ;; validates the value at the given path, like normal
        [[:a (wild keyword?) (wild string?)] String]
        {:a {:x {"b" :b "c" "letter c"}}}
-       #{"Value :b at path [:a :x \"b\"] expected class java.lang.String, but was clojure.lang.Keyword"}
+       #{"Expected value :b, at path [:a :x \"b\"], to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
 
        ;; if a path exists that doesn't match the wildcard, it is considered an extraneous path
        [[:a] (map-schema :strict [[(wild Keyword)] String])]
@@ -314,13 +313,13 @@
        ;; can use Class objects as wildcard part of wildcard path
        [[:a (wild String)] String]
        {:a {"b" :b "c" "letter c"}}
-       #{"Value :b at path [:a \"b\"] expected class java.lang.String, but was clojure.lang.Keyword"}
+       #{"Expected value :b, at path [:a \"b\"], to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
 
        ;; can use 'and statements' in simple-schemas
        [[:a (wild [String #{"baz" "qux"}])] String]
        {:a {"baz" :b "c" "letter c"}}
-       #{"Value :b at path [:a \"baz\"] expected class java.lang.String, but was clojure.lang.Keyword"
-         "Path [:a \"c\"] was not specified in the schema."}
+       #{"Path [:a \"c\"] was not specified in the schema."
+         "Expected value :b, at path [:a \"baz\"], to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
 
        ;; if no keys of the leaf-map match the wildcard, that is OK
        [[:a (wild string?)] String]
@@ -420,9 +419,9 @@
   (let [errors (validation-errors schema-with-constraints {:a "string"
                                                            :b 99
                                                            :extra 47})]
-    (is (or (= #{"At path [], constraint failed. Expected '((fn [m] (even? (count (keys m)))) {:extra 47, :a \"string\", :b 99})' to be true, but was false." "At path [], constraint failed. Expected '((comp even? count distinct vals) {:extra 47, :a \"string\", :b 99})' to be true, but was false."}
+    (is (or (= #{"Constraint failed. Expected '((fn [m] (even? (count (keys m)))) {:extra 47, :a \"string\", :b 99})' to be true, but was false." "Constraint failed. Expected '((comp even? count distinct vals) {:extra 47, :a \"string\", :b 99})' to be true, but was false."}
                errors)
-            (= #{"At path [], constraint failed. Expected '((fn [m] (even? (count (keys m)))) {:a \"string\", :b 99, :extra 47})' to be true, but was false." "At path [], constraint failed. Expected '((comp even? count distinct vals) {:a \"string\", :b 99, :extra 47})' to be true, but was false."}
+            (= #{"Constraint failed. Expected '((fn [m] (even? (count (keys m)))) {:a \"string\", :b 99, :extra 47})' to be true, but was false." "Constraint failed. Expected '((comp even? count distinct vals) {:a \"string\", :b 99, :extra 47})' to be true, but was false."}
                errors))))
 
   (is (= #{} (validation-errors schema-with-constraints {:a "string"
@@ -542,33 +541,33 @@
 (deftest test-seq-validation-errors
   (is (= #{}
          (validation-errors (seq-schema :all String) ["a" "b" "c"])))
-  (is (= #{"Value :c at path [] expected class java.lang.String, but was clojure.lang.Keyword"
-           "Value :b at path [] expected class java.lang.String, but was clojure.lang.Keyword"
-           "Value :a at path [] expected class java.lang.String, but was clojure.lang.Keyword"}
+  (is (= #{"Expected value :a to be an instance of class java.lang.String, but was clojure.lang.Keyword"
+           "Expected value :b to be an instance of class java.lang.String, but was clojure.lang.Keyword"
+           "Expected value :c to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
          (validation-errors (seq-schema :all String) [:a :b :c]))))
 
 (deftest test-simple-schemas
   (is (= #{}
          (validation-errors String "neat")))
-  (is (= #{"Value 44 at path [] expected class java.lang.String, but was java.lang.Integer"}
+  (is (= #{"Expected value 44 to be an instance of class java.lang.String, but was java.lang.Integer"}
          (validation-errors String 44)))
 
   (is (= #{}
          (validation-errors [:or String Number] "neat")
          (validation-errors [:or String Number] 55)))
-  (is (= #{"Value :keyword at path [] expected class java.lang.String, but was clojure.lang.Keyword"
-           "Value :keyword at path [] expected class java.lang.Number, but was clojure.lang.Keyword"}
+  (is (= #{"Expected value :keyword to be an instance of class java.lang.Number, but was clojure.lang.Keyword"
+           "Expected value :keyword to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
          (validation-errors [:or String Number] :keyword)))
 
   (is (= #{}
          (validation-errors [Number Long] (long 55))))
-  (is (= #{"Value :keyword at path [] expected class java.lang.Long, but was clojure.lang.Keyword"
-           "Value :keyword at path [] expected class java.lang.Number, but was clojure.lang.Keyword"}
+  (is (= #{"Expected value :keyword to be an instance of class java.lang.Number, but was clojure.lang.Keyword"
+           "Expected value :keyword to be an instance of class java.lang.Long, but was clojure.lang.Keyword"}
          (validation-errors [Number Long] :keyword)))
 
   (is (= #{}
          (validation-errors string? "string")))
-  (is (= #{"Value 99, at path [], did not match predicate 'string?'."}
+  (is (= #{"Value 99 did not match predicate 'string?'."}
          (validation-errors string? 99))))
 
 (deftest test-seq-layouts
@@ -582,7 +581,7 @@
                                                    [1 0 1 0 1 0 1 0]
                                                    [0 1 0 1 0 1 0 1]])))
 
-  (is (= #{"At path [], constraint failed. Expected '((fn [xs] (= (count seq-layout) (count xs))) [[0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1]])' to be true, but was false."}
+  (is (= #{"Constraint failed. Expected '((fn [xs] (= (count seq-layout) (count xs))) [[0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1]])' to be true, but was false."}
          (validation-errors checkers-board-schema [[0 1 0 1 0 1 0 1]
                                                    [1 0 1 0 1 0 1 0]
                                                    [0 1 0 1 0 1 0 1]
@@ -591,7 +590,7 @@
                                                    [1 0 1 0 1 0 1 0]
                                                    [0 1 0 1 0 1 0 1]])))
 
-  (is (= #{"Value 77777, at path [], did not match predicate '#{1}'."}
+  (is (= #{"Value 77777 did not match predicate '#{1}'."}
          (validation-errors checkers-board-schema [[1 0 1 0 1 0 1 0]
                                                    [0 1 0 1 0 1 0 1]
                                                    [1 0 1 0 1 0 1 0]
@@ -607,21 +606,21 @@
 
   (is (= #{}
          (validation-errors unsorted-non-empty-map {:a 1})))
-  (is (= #{"At path [], constraint failed. Expected '((complement empty?) {})' to be true, but was false."}
+  (is (= #{"Constraint failed. Expected '((complement empty?) {})' to be true, but was false."}
          (validation-errors unsorted-non-empty-map {})))
-  (is (= #{"At path [], constraint failed. Expected '((fn [m] (not (sorted? m))) {:a 1})' to be true, but was false."}
+  (is (= #{"Constraint failed. Expected '((fn [m] (not (sorted? m))) {:a 1})' to be true, but was false."}
          (validation-errors unsorted-non-empty-map (sorted-map :a 1))))
 
   (is (= #{}
          (validation-errors red-list (list :red :red))))
-  (is (= #{"At path [], constraint failed. Expected '((fn [xs] (even? (count xs))) (:red :red :red))' to be true, but was false."}
+  (is (= #{"Constraint failed. Expected '((fn [xs] (even? (count xs))) (:red :red :red))' to be true, but was false."}
          (validation-errors red-list (list :red :red :red))))
-  (is (= #{"At path [], constraint failed. Expected '(list? [:red :red])' to be true, but was false."}
+  (is (= #{"Constraint failed. Expected '(list? [:red :red])' to be true, but was false."}
          (validation-errors red-list (vector :red :red))))
 
   (is (= #{}
          (validation-errors red-set (sorted-set :red :RED))))
-  (is (= #{"At path [], constraint failed. Expected '((fn [xs] (even? (count xs))) #{:RED :Red :red})' to be true, but was false."}
+  (is (= #{"Constraint failed. Expected '((fn [xs] (even? (count xs))) #{:RED :Red :red})' to be true, but was false."}
          (validation-errors red-set (sorted-set :red :RED :Red))))
-  (is (= #{"At path [], constraint failed. Expected '(sorted? #{:red :RED})' to be true, but was false."}
+  (is (= #{"Constraint failed. Expected '(sorted? #{:red :RED})' to be true, but was false."}
          (validation-errors red-set (hash-set :red :RED)))))
