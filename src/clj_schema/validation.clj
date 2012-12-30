@@ -58,7 +58,7 @@
 
 (defn- validator-type [validator]
   (cond (s/schema? validator) :schema
-        (class? validator) :class
+        (class? validator) :schema
         (and (sequential? validator) (= :or (first validator))) :or-statement
         (sequential? validator) :and-statement
         :else :predicate))
@@ -69,11 +69,6 @@
 
 (defmethod errors-for-path-content :schema [full-path schema val-at-path]
   (validation-errors *error-reporter* full-path schema val-at-path))
-
-(defmethod errors-for-path-content :class [full-path expected-class val-at-path]
-  (if-not (instance? expected-class val-at-path)
-    [(instance-of-fail-error *error-reporter* (state-map-for-reporter full-path) val-at-path expected-class)]
-    []))
 
 (defmethod errors-for-path-content :predicate [full-path pred val-at-path]
   (if-not ((u/fn->fn-thats-false-if-throws pred) val-at-path)  ;; keeps us safe from ClassCastExceptions, etc
@@ -219,27 +214,37 @@
 (defn- set-validation-errors [parent-path schema xs]
   (seq-validation-errors parent-path schema xs))
 
+(defn- class-validation-errors [parent-path schema x]
+  (let [expected-class (:schema-spec schema)]
+    (if-not (instance? expected-class x)
+      #{(instance-of-fail-error *error-reporter* (state-map-for-reporter parent-path) x expected-class)}
+      #{})))
+
 (defn validation-errors
   "Returns a set of all the validation errors found when comparing a given
    map m, against the supplied schema.
 
    A validator is either a schema, predicate, Class or vector of them.
    See this ns's :doc meta for more details."
-  ([schema m]
-     (validation-errors (StringErrorReporter.) [] schema m))
-  ([error-reporter schema m]
-     (validation-errors error-reporter [] schema m))
-  ([error-reporter parent-path schema m]
+  ([schema x]
+     (validation-errors (StringErrorReporter.) [] schema x))
+  ([error-reporter schema x]
+     (validation-errors error-reporter [] schema x))
+  ([error-reporter parent-path schema x]
      (binding [*error-reporter* error-reporter
-               *data-under-validation* m
+               *data-under-validation* x
                *schema* schema
                *parent-path* parent-path]
-       (if-let [c-errors (seq (constraint-errors))]
-         (set c-errors)
-         (case (:type schema)
-           :map (map-validation-errors parent-path schema m)
-           :seq (seq-validation-errors parent-path schema m)
-           :set (set-validation-errors parent-path schema m))))))
+       (let [schema (if (s/schema? schema)
+                      schema
+                      (s/basic-schema schema))]
+         (if-let [c-errors (seq (constraint-errors))]
+           (set c-errors)
+           (case (:type schema)
+             :map (map-validation-errors parent-path schema x)
+             :seq (seq-validation-errors parent-path schema x)
+             :set (set-validation-errors parent-path schema x)
+             :class (class-validation-errors parent-path schema x)))))))
 
 (defn valid?
   "Returns true if calling `validation-errors` would return no errors"

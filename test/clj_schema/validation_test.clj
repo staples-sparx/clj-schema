@@ -540,6 +540,13 @@
                               (fn [m errors] (str "FAIL: " m errors))))))
 
 (deftest test-seq-validation-errors
-  (is (= #{} (validation-errors (seq-schema String) ["a" "b" "c"])))
+  (is (= #{}
+         (validation-errors (seq-schema String) ["a" "b" "c"])))
   (is (= #{"Value :c at path [] expected class java.lang.String, but was clojure.lang.Keyword" "Value :b at path [] expected class java.lang.String, but was clojure.lang.Keyword" "Value :a at path [] expected class java.lang.String, but was clojure.lang.Keyword"}
          (validation-errors (seq-schema String) [:a :b :c]))))
+
+(deftest test-basic-schema
+  (is (= #{}
+         (validation-errors String "neat")))
+  (is (= #{"Value 44 at path [] expected class java.lang.String, but was java.lang.Integer"}
+         (validation-errors String 44))))

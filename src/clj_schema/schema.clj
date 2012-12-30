@@ -194,6 +194,14 @@ path and the second element is the validator"
   `(-> (def ~name (set-schema ~@constraints-and-schema-specs))
        (alter-meta! assoc ::schema true)))
 
+(defn basic-schema
+  "Makes a simple schema from a supplied Class. TODO, more :)"
+  [x]
+  (cond (class? x)
+        {:type :class
+         :schema-spec x
+         :constraints []}))
+
 
 ;; Validator Modifiers
 
