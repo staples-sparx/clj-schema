@@ -96,7 +96,7 @@ As you can see in the example above, `def-map-schema` creates a strict schema by
 present but does not complain about extra paths
 
 
-Seq and Set Validation and Introducing Constraints
+Seq/Set Validation and Introducing Constraints
 ==================================================
 
 You can also add constraints: predicates that apply to the entire
@@ -107,21 +107,38 @@ data structure under validation:
   (constraints sorted? (fn [m] (= (count (keys m))
                                   (count (distinct (keys m))))))
   [[:id] String])
+```
 
-;; A checkerboard schema, describing an 8x8 seq of seqs,
-;; that contains only 1's and 0's.
-(def black-square #(= 0 %))
-(def white-square #(= 1 %))
+#### A checkerboard schema, describing an 8x8 seq of seqs, that contains only 1's and 0's.
+
+```clj
+(def black-sq #(= 0 %))
+(def white-sq #(= 1 %))
 
 (def-seq-schema checkers-row
   (constraints (fn [row] (= 8 (count row))))
-  [:or white-square black-square])
+  [:or white-sq black-sq])
 
 (def-seq-schema checkers-board
   (constraints (fn [row] (= 8 (count row))))
   checkers-row-schema)
+```        
 
-;; and for all your marble-based apps:
+#### An alternate, layout-based checkerboard schema, ensures checkering of 1's and 0's:
+
+```clj
+(def-seq-schema :layout white-row
+  [white-sq black-sq white-sq black-sq white-sq black-sq white-sq black-sq])
+
+(def-seq-schema :layout black-row
+  [black-sq white-sq black-sq white-sq black-sq white-sq black-sq white-sq])
+
+(def-seq-schema :layout checkers-board-schema
+  [white-row black-row white-row black-row white-row black-row white-row black-row])
+```
+
+#### Sets schemas, for all your marble-based apps:
+```clj
 (def-set-schema bag-of-marbles
   (constraints #(> 50 (count %)))
   (OneOf :red :blue :green :yellow :striped :polka-dot :black :white))

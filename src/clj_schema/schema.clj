@@ -166,36 +166,39 @@ map under-validation to have more keys than are specified in the schema."
     `(-> (def ~name (map-schema ~looseness ~@constraints-and-schema-vectors))
          (alter-meta! assoc ::schema true ::strict ~(= :strict looseness)))))
 
-(defn seq-layout-schema
-  "TODO"
-  [seq-representation]
-  (let [seq-length (count seq-representation)]
-    {:type :seq-layout
-     :schema-spec seq-representation
-     :constraints (concat seq-constraints (constraints (fn [xs] (= seq-length (count xs)))))}))
-
-(defmacro def-seq-layout-schema
-  "TODO"
-  [name & constraints-and-schema-specs]
-  `(-> (def ~name (seq-layout-schema ~@constraints-and-schema-specs))
-       (alter-meta! assoc ::schema true)))
-
 (defn seq-schema
   "Creates a schema for a sequence. Every element of the sequence should match
    the given schema.
+   First argument is either :all or :layout, and indicates whether to apply the
+   given schema to all members of the sequence, or to treat the supplied vector as
+   a layout to check the sequence against.
    Accepts constraints that are applied to the whole sequence."
-  [& constraints-and-schema-specs]
+  [all-or-layout & constraints-and-schema-specs]
   (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-specs))
-        schema (first (remove constraints? constraints-and-schema-specs))]
-    {:type :seq
-     :schema-spec schema
-     :constraints (concat seq-constraints user-specified-constraints)}))
+        schema (first (remove constraints? constraints-and-schema-specs))
+        seq-layout schema]
+    (assert (contains? #{:all :layout} all-or-layout))
+    (if (= :layout all-or-layout)
+      {:type :seq-layout
+       :schema-spec seq-layout
+       :constraints (concat seq-constraints
+                            user-specified-constraints
+                            (constraints (fn [xs] (= (count seq-layout) (count xs)))))}
+      {:type :seq
+       :schema-spec schema
+       :constraints (concat seq-constraints user-specified-constraints)})))
 
 (defmacro def-seq-schema
   "Creates a named var for a seq-schema. See `seq-schema` for more details."
-  [name & constraints-and-schema-specs]
-  `(-> (def ~name (seq-schema ~@constraints-and-schema-specs))
-       (alter-meta! assoc ::schema true)))
+  [& args]
+  {:arglists '([name & constraints-and-schema-specs]
+               [all-or-layout name & constraints-and-schema-specs])}
+  (let [[all-or-layout name & constraints-and-schema-specs] (if (keyword? (first args))
+                                                            args
+                                                            (cons :all args))]
+    (assert (contains? #{:all :layout} all-or-layout))
+    `(-> (def ~name (seq-schema ~all-or-layout ~@constraints-and-schema-specs))
+         (alter-meta! assoc ::schema true))))
 
 (defn set-schema
   "Creates a schema for a set. Every element of the set should match
@@ -214,14 +217,16 @@ map under-validation to have more keys than are specified in the schema."
   `(-> (def ~name (set-schema ~@constraints-and-schema-specs))
        (alter-meta! assoc ::schema true)))
 
-
-;; Wildcard Paths
-
-(def ^{:doc "Wraps a schema to make it a schema that apply to every element of a sequential"}
-  sequence-of seq-schema)
+(defn sequence-of
+  "Wraps a schema to make it a schema that apply to every element of a sequential"
+  [schema]
+  (seq-schema :all schema))
 
 (def ^{:doc "Wraps a schema to make it a schema that apply to every element of a set"}
   set-of set-schema)
+
+
+;; Wildcard Paths
 
 (defrecord Wildcard [schema])
 

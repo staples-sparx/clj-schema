@@ -46,12 +46,12 @@
 (def black-square (OneOf 0))
 (def white-square (OneOf 1))
 
-(def-seq-layout-schema white-row
+(def-seq-schema :layout white-row
   [white-square black-square white-square black-square white-square black-square white-square black-square])
 
-(def-seq-layout-schema black-row
+(def-seq-schema :layout black-row
   [black-square white-square black-square white-square black-square white-square black-square white-square])
 
-(def-seq-layout-schema checkers-board-schema
+(def-seq-schema :layout checkers-board-schema
   [white-row black-row white-row black-row white-row black-row white-row black-row])
 

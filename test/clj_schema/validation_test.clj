@@ -541,11 +541,11 @@
 
 (deftest test-seq-validation-errors
   (is (= #{}
-         (validation-errors (seq-schema String) ["a" "b" "c"])))
+         (validation-errors (seq-schema :all String) ["a" "b" "c"])))
   (is (= #{"Value :c at path [] expected class java.lang.String, but was clojure.lang.Keyword"
            "Value :b at path [] expected class java.lang.String, but was clojure.lang.Keyword"
            "Value :a at path [] expected class java.lang.String, but was clojure.lang.Keyword"}
-         (validation-errors (seq-schema String) [:a :b :c]))))
+         (validation-errors (seq-schema :all String) [:a :b :c]))))
 
 (deftest test-simple-schemas
   (is (= #{}
@@ -582,7 +582,7 @@
                                                    [1 0 1 0 1 0 1 0]
                                                    [0 1 0 1 0 1 0 1]])))
 
-  (is (= #{"At path [], constraint failed. Expected '((fn [xs] (= seq-length (count xs))) [[0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1]])' to be true, but was false."}
+  (is (= #{"At path [], constraint failed. Expected '((fn [xs] (= (count seq-layout) (count xs))) [[0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1]])' to be true, but was false."}
          (validation-errors checkers-board-schema [[0 1 0 1 0 1 0 1]
                                                    [1 0 1 0 1 0 1 0]
                                                    [0 1 0 1 0 1 0 1]
