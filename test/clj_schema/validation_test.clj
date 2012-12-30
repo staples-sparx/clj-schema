@@ -570,3 +570,33 @@
          (validation-errors string? "string")))
   (is (= #{"Value 99, at path [], did not match predicate 'string?'."}
          (validation-errors string? 99))))
+
+(deftest test-seq-layouts
+  (is (= #{}
+         (validation-errors checkers-board-schema [[1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]])))
+
+  (is (= #{"At path [], constraint failed. Expected '((fn [xs] (= seq-length (count xs))) [[0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1] [1 0 1 0 1 0 1 0] [0 1 0 1 0 1 0 1]])' to be true, but was false."}
+         (validation-errors checkers-board-schema [[0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]])))
+
+  (is (= #{"Value 77777, at path [], did not match predicate '#{1}'."}
+         (validation-errors checkers-board-schema [[1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 77777 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]]))))

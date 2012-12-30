@@ -1,5 +1,6 @@
 (ns clj-schema.test-schemas
-  (:use [clj-schema.schema]))
+  (:use [clj-schema.schema]
+        [clj-schema.simple-schemas]))
 
 
 (def-map-schema name-schema   [[:name :first] String])
@@ -39,4 +40,18 @@
 
 (def-simple-schema my-simple-schema
   String)
+
+;;; Checkerboard
+
+(def black-square (OneOf 0))
+(def white-square (OneOf 1))
+
+(def-seq-layout-schema white-row
+  [white-square black-square white-square black-square white-square black-square white-square black-square])
+
+(def-seq-layout-schema black-row
+  [black-square white-square black-square white-square black-square white-square black-square white-square])
+
+(def-seq-layout-schema checkers-board-schema
+  [white-row black-row white-row black-row white-row black-row white-row black-row])
 

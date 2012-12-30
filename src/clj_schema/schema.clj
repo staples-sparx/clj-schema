@@ -166,6 +166,20 @@ map under-validation to have more keys than are specified in the schema."
     `(-> (def ~name (map-schema ~looseness ~@constraints-and-schema-vectors))
          (alter-meta! assoc ::schema true ::strict ~(= :strict looseness)))))
 
+(defn seq-layout-schema
+  "TODO"
+  [seq-representation]
+  (let [seq-length (count seq-representation)]
+    {:type :seq-layout
+     :schema-spec seq-representation
+     :constraints (concat seq-constraints (constraints (fn [xs] (= seq-length (count xs)))))}))
+
+(defmacro def-seq-layout-schema
+  "TODO"
+  [name & constraints-and-schema-specs]
+  `(-> (def ~name (seq-layout-schema ~@constraints-and-schema-specs))
+       (alter-meta! assoc ::schema true)))
+
 (defn seq-schema
   "Creates a schema for a sequence. Every element of the sequence should match
    the given schema.

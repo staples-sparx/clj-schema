@@ -14,11 +14,16 @@
      :full-path - the full path in a nested map structure
      :all-wildcard-paths - any path that includes a wildcard
      :schema-without-wildcard-paths - a version of the schema with wildcard paths removed"
-  (constraint-error [this state constraint] "Caused by a constraint predicate failing against the entire data structure or value")
-  (extraneous-path-error [this state xtra-path] "Caused by finding a path that doesn't exist in the schema.  This only applies to schemas that are not loose")
-  (missing-path-error [this state missing-path] "Caused by not finding a path mentioned in the schema")
-  (predicate-fail-error [this state val-at-path pred] "Caused by a predicate schema returning false or nil")
-  (instance-of-fail-error [this state val-at-path expected-class] "Caused by the value not being the expected Class, and not being a subtype of the expected Class"))
+  (constraint-error [this state constraint]
+    "Caused by a constraint predicate failing against the entire data structure or value")
+  (extraneous-path-error [this state xtra-path]
+    "Caused by finding a path that doesn't exist in the schema.  This only applies to schemas that are not loose")
+  (missing-path-error [this state missing-path]
+    "Caused by not finding a path mentioned in the schema")
+  (predicate-fail-error [this state val-at-path pred]
+    "Caused by a predicate schema returning false or nil")
+  (instance-of-fail-error [this state val-at-path expected-class]
+    "Caused by the value not being the expected Class, and not being a subtype of the expected Class"))
 
 (deftype StringErrorReporter []
   ErrorReporter
@@ -170,6 +175,13 @@
          (apply concat)
          set)))
 
+(defn- seq-layout-validation-errors [parent-path schema xs]
+  (let [layout (:schema-spec schema)]
+    (set (mapcat (fn [schema-x x]
+                   (validation-errors *error-reporter* parent-path schema-x x))
+                 layout
+                 xs))))
+
 (defn- set-validation-errors [parent-path schema xs]
   (seq-validation-errors parent-path schema xs))
 
@@ -202,6 +214,7 @@
   (case (:type schema)
     :map map-validation-errors
     :seq seq-validation-errors
+    :seq-layout seq-layout-validation-errors
     :set set-validation-errors
     :class class-validation-errors
     :or-statement or-statement-validation-errors

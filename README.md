@@ -95,8 +95,6 @@ As you can see in the example above, `def-map-schema` creates a strict schema by
 `(def-map-schema :loose [[:a] String])` creates a loose schema, which expects its paths to be
 present but does not complain about extra paths
 
-Map schemas can be altered to be loose or strict using `as-loose-schema` or `as-strict-schema`
-
 
 Seq and Set Validation and Introducing Constraints
 ==================================================
