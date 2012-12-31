@@ -50,7 +50,7 @@ have to be present, but if it is, it must match the given schema.
 Wildcard paths are paths where one or more peices are defined as anything
 matching a given schema.
 
-Example Kitches Sink Schema:
+Example Map Schema:
 
 ```clj
 (:require [clj-schema.schema :refer [def-map-schema optional-path sequence-of 
