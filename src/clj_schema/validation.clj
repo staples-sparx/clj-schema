@@ -1,5 +1,3 @@
-
-
 (ns clj-schema.validation
   (:require [clojure.set :as set]
             [clj-schema.schema :as s]
@@ -31,9 +29,9 @@
   ErrorReporter
   (constraint-error [_ {:keys [parent-path data-under-validation]} constraint]
     (if (empty? parent-path)
-      (format "Constraint failed. Did not pass predicate '%s'"
+      (format "Constraint failed: '%s'"
               (:source constraint) (pr-str data-under-validation))
-      (format "At parent path %s, constraint failed. Did not pass predicate '%s'"
+      (format "At parent path %s, constraint failed: '%s'"
               parent-path (:source constraint) (pr-str data-under-validation))))
 
   (extraneous-path-error [_ _ xtra-path]
