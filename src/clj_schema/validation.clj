@@ -252,10 +252,8 @@
 
 (defn valid?
   "Returns true if calling `validation-errors` would return no errors"
-  ([schema m]
-    (valid? (StringErrorReporter.) schema m))
-  ([error-reporter schema m]
-    (empty? (validation-errors error-reporter schema m))))
+  [schema m]
+  (empty? (validation-errors (StringErrorReporter.) schema m)))
 
 (defn validate-and-handle
   "Validates item x against a schema.
