@@ -45,17 +45,9 @@ map under-validation to have more keys than are specified in the schema."
   [schema]
   (set (take-nth 2 (:schema-spec schema))))
 
-(defn constraint?
-  "Returns whether x is a constraint."
-  [x]
+(defn- constraint-bundle? [x]
   (and (map? x)
-       (= #{:predicate :source} (set (keys x)))))
-
-(defn constraints?
-  "Returns whether x is a seq of only constraints."
-  [x]
-  (and (sequential? x)
-       (every? constraint? x)))
+       (contains? x ::constraint-bundle)))
 
 
 ;;; Schemas For Arbitrary Data Structures or Values: Simple Schemas
@@ -119,22 +111,27 @@ map under-validation to have more keys than are specified in the schema."
 
 ;;;; Schemas for Specific Data Structures
 
+(defn- constraint-form [sub-schema-sexp]
+ `(assoc (simple-schema ~sub-schema-sexp)
+    :source '~sub-schema-sexp))
+
+(defmacro ^{:private true} constraint [sub-schema-sexp]
+  (constraint-form sub-schema-sexp))
+
 (defmacro constraints
-  "Wrap a group of predicates, so that they can be tested against
-   the entire data structure in a schema."
-  [& pred-sexps]
-  (vec (for [ps pred-sexps]
-         `{:predicate ~ps
-           :source '~ps})))
+  "Wrap a group of sub-schemas, so that they can be tested against
+   the entire data structure in a surrounding schema."
+  [& sub-schema-sexps]
+  {::constraint-bundle (vec (map constraint-form sub-schema-sexps))})
 
 (def ^{:doc "Constraints common to all map schemas"}
-  map-constraints (constraints (fn [m] (or (nil? m) (map? m)))))
+  map-constraints [(constraint [:or nil? map?])])
 
 (def ^{:doc "Constraints common to all seq schemas"}
-  seq-constraints (constraints (fn [m] (or (nil? m) (sequential? m)))))
+  seq-constraints [(constraint [:or nil? sequential?])])
 
 (def ^{:doc "Constraints common to all set schemas"}
-  set-constraints (constraints (fn [m] (or (nil? m) (set? m)))))
+  set-constraints [(constraint [:or nil? set?])])
 
 (defn map-schema
   "Creates a schema for a map. looseness is either :loose or :strict. If :strict
@@ -142,11 +139,12 @@ map under-validation to have more keys than are specified in the schema."
    Can be supplied other schemas which it will addd behavior to..
    Accepts constraints that are applied to the whole map."
   [looseness & constraints-and-schema-vectors]
-  (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-vectors))
+  (let [user-specified-constraints (mapcat ::constraint-bundle
+                                           (filter constraint-bundle? constraints-and-schema-vectors))
         schemas (filter schema? constraints-and-schema-vectors)
         inherited-schema-specs (mapcat :schema-spec schemas)
         inherited-constraints (mapcat :constraints schemas)
-        schema-spec? (fn [x] (and (vector? x) (not (constraints? x))))
+        schema-spec? (fn [x] (and (vector? x) (not (constraint-bundle? x))))
         schema-specs (apply concat (filter schema-spec? constraints-and-schema-vectors))
         flattened-schema-specs (vec (concat inherited-schema-specs schema-specs))]
     (assert (even? (count schema-specs)))
@@ -177,8 +175,9 @@ map under-validation to have more keys than are specified in the schema."
    a layout to check the sequence against.
    Accepts constraints that are applied to the whole sequence."
   [all-or-layout & constraints-and-schema-specs]
-  (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-specs))
-        schema (first (remove constraints? constraints-and-schema-specs))
+  (let [user-specified-constraints (mapcat ::constraint-bundle
+                                           (filter constraint-bundle? constraints-and-schema-specs))
+        schema (first (remove constraint-bundle? constraints-and-schema-specs))
         seq-layout schema]
     (assert (contains? #{:all :layout} all-or-layout))
     (if (= :layout all-or-layout)
@@ -186,7 +185,7 @@ map under-validation to have more keys than are specified in the schema."
        :schema-spec seq-layout
        :constraints (distinct (concat seq-constraints
                                       user-specified-constraints
-                                      (constraints (fn [xs] (= (count seq-layout) (count xs))))))}
+                                      [(constraint (fn [xs] (= (count seq-layout) (count xs))))]))}
       {:type :seq
        :schema-spec schema
        :constraints (distinct (concat seq-constraints user-specified-constraints))})))
@@ -208,8 +207,9 @@ map under-validation to have more keys than are specified in the schema."
    the given schema.
    Accepts constraints that are applied to the whole sequence."
   [& constraints-and-schema-specs]
-  (let [user-specified-constraints (apply concat (filter constraints? constraints-and-schema-specs))
-        schema (first (remove constraints? constraints-and-schema-specs))]
+  (let [user-specified-constraints (mapcat ::constraint-bundle
+                                           (filter constraint-bundle? constraints-and-schema-specs))
+        schema (first (remove constraint-bundle? constraints-and-schema-specs))]
     {:type :set
      :schema-spec schema
      :constraints (concat set-constraints user-specified-constraints)}))

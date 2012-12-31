@@ -19,7 +19,7 @@
        nil             nil         #{}
        []              nil         #{}
 
-       family-schema [[:a] 2 [:b] 4] #{"Constraint failed. Did not pass predicate '(fn [m] (or (nil? m) (map? m)))'"}
+       family-schema [[:a] 2 [:b] 4] #{"Constraint failed. Did not pass predicate '[:or nil? map?]'"}
 
        ;;
 
@@ -221,12 +221,12 @@
 ;;;; marked as 'sequence-of' but only one value - causes an error
        [[:a] (sequence-of person-schema)]
        {:a {:name {:first "Roberto"} :height "76"}}
-       #{"At parent path [:a], constraint failed. Did not pass predicate '(fn [m] (or (nil? m) (sequential? m)))'"}
+       #{"At parent path [:a], constraint failed. Did not pass predicate '[:or nil? sequential?]'"}
 
 ;;;; using 'sequence-of' with an 'Number' class - means there is a seq of numbers
        [[:a] (sequence-of Number)]
        {:a 1}
-       #{"At parent path [:a], constraint failed. Did not pass predicate '(fn [m] (or (nil? m) (sequential? m)))'"}
+       #{"At parent path [:a], constraint failed. Did not pass predicate '[:or nil? sequential?]'"}
 
 ;;;; nil is an acceptable value for a 'sequence-of' schema
        [[:a] (sequence-of integer?)]
@@ -246,12 +246,12 @@
 ;;;; marked as 'set-of' but only one value - causes an error
        [[:a] (set-of person-schema)]
        {:a {:name {:first "Roberto"} :height "76"}}
-       #{"At parent path [:a], constraint failed. Did not pass predicate '(fn [m] (or (nil? m) (set? m)))'"}
+       #{"At parent path [:a], constraint failed. Did not pass predicate '[:or nil? set?]'"}
 
 ;;;; using 'set-of' with an 'Number' predicate - means there is a set of numbers
        [[:a] (set-of Number)]
        {:a 1}
-       #{"At parent path [:a], constraint failed. Did not pass predicate '(fn [m] (or (nil? m) (set? m)))'"}
+       #{"At parent path [:a], constraint failed. Did not pass predicate '[:or nil? set?]'"}
 
 ;;;; nil is an acceptable value for a 'set-of' schema
        [[:a] (set-of integer?)]

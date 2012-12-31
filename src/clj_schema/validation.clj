@@ -1,3 +1,5 @@
+
+
 (ns clj-schema.validation
   (:require [clojure.set :as set]
             [clj-schema.schema :as s]
@@ -33,26 +35,28 @@
               (:source constraint) (pr-str data-under-validation))
       (format "At parent path %s, constraint failed. Did not pass predicate '%s'"
               parent-path (:source constraint) (pr-str data-under-validation))))
-  
+
   (extraneous-path-error [_ _ xtra-path]
     (format "Path %s was not specified in the schema." xtra-path))
-  
+
   (missing-path-error [_ _ missing-path]
     (format "Map did not contain expected path %s." missing-path))
-  
-  (predicate-fail-error [_ {:keys [full-path]} val-at-path pred]
+
+  (predicate-fail-error [_ {:keys [full-path schema]} val-at-path pred]
     (if (empty? full-path)
       (format "Value %s did not match predicate '%s'."
-              (pr-str val-at-path) (u/pretty-fn-str pred))
+        (pr-str val-at-path) (or (:source schema)
+                               (u/pretty-fn-str pred)))
       (format "Value %s, at path %s, did not match predicate '%s'."
-              (pr-str val-at-path) full-path (u/pretty-fn-str pred))))
-  
-  (instance-of-fail-error [_ {:keys [full-path]} val-at-path expected-class]
+        (pr-str val-at-path) full-path (or (:source schema)
+                                         (u/pretty-fn-str pred)))))
+
+  (instance-of-fail-error [_ {:keys [full-path schema]} val-at-path expected-class]
     (if (empty? full-path)
       (format "Expected value %s to be an instance of class %s, but was %s"
-              (pr-str val-at-path) (pr-str expected-class) (pr-str (class val-at-path)))
+        (pr-str val-at-path) (pr-str expected-class) (pr-str (class val-at-path)))
       (format "Expected value %s, at path %s, to be an instance of class %s, but was %s"
-              (pr-str val-at-path) full-path (pr-str expected-class) (pr-str (class val-at-path))))))
+        (pr-str val-at-path) full-path (pr-str expected-class) (pr-str (class val-at-path))))))
 
 ;; used to hold state of one `validation-errors` calculation
 (def ^{:private true :dynamic true} *error-reporter* nil)
@@ -92,10 +96,10 @@
         full-path (into *parent-path* schema-path)]
     (cond (and (not contains-path?) (s/optional-path? schema-path))
           []
-          
+
           (not contains-path?)
           [(missing-path-error *error-reporter* (state-map-for-reporter full-path) full-path)]
-          
+
           :else
           (validation-errors *error-reporter* full-path schema val-at-path))))
 
@@ -166,9 +170,8 @@
 
 (defn- constraint-errors []
   (set (for [c (:constraints *schema*)
-             :when (not ((:predicate c) *data-under-validation*))]
+             :when (not (valid? c *data-under-validation*))]
          (constraint-error *error-reporter* (state-map-for-reporter []) c))))
-
 
 (defn- map-validation-errors [parent-path schema m]
   (binding [*all-wildcard-paths* (s/wildcard-path-set schema)

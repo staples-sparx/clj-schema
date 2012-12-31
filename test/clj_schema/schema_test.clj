@@ -53,15 +53,19 @@
          person-schema)))
 
 (deftest test-constraints
-  (is (= [{:predicate first
-           :source 'first}
-          {:predicate second
-           :source 'second}]
+  (is (= {:clj-schema.schema/constraint-bundle [{:type :predicate
+                                                 :schema-spec first
+                                                 :constraints []
+                                                 :source 'first}
+                                                {:type :predicate
+                                                 :schema-spec second
+                                                 :constraints []
+                                                 :source 'second}]}
          (constraints first
                       second)))
 
-  (is (= true ((:predicate (first (constraints odd?))) 99)))
-  (is (= false ((:predicate (first (constraints odd?))) 100))))
+  (is (= true ((:schema-spec (first (:clj-schema.schema/constraint-bundle (constraints odd?)))) 99)))
+  (is (= false ((:schema-spec (first (:clj-schema.schema/constraint-bundle (constraints odd?)))) 100))))
 
 (deftest test-schemas-with-constraints
   (is (= 4 (count (keys schema-with-constraints))))
@@ -70,7 +74,7 @@
          (:schema-spec schema-with-constraints)))
   (is (= false (:strict schema-with-constraints)))
   (is (= 3 (count (:constraints schema-with-constraints))))
-  (is (every? constraint? (:constraints schema-with-constraints))))
+  (is (every? schema? (:constraints schema-with-constraints))))
 
 
 ;;; Questions
