@@ -126,14 +126,9 @@ map under-validation to have more keys than are specified in the schema."
   [& sub-schema-sexps]
   {::constraint-bundle (vec (map constraint-form sub-schema-sexps))})
 
-(def ^{:doc "Constraints common to all map schemas"}
-  map-constraints [(constraint [:or nil? map?])])
-
-(def ^{:doc "Constraints common to all seq schemas"}
-  seq-constraints [(constraint [:or nil? sequential?])])
-
-(def ^{:doc "Constraints common to all set schemas"}
-  set-constraints [(constraint [:or nil? set?])])
+(def ^{:private true} map-constraints [(constraint [:or nil? map?])])
+(def ^{:private true} seq-constraints [(constraint [:or nil? sequential?])])
+(def ^{:private true} set-constraints [(constraint [:or nil? set?])])
 
 (defn map-schema
   "Creates a schema for a map. looseness is either :loose or :strict. If :strict

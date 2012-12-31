@@ -22,7 +22,7 @@
             :schema-spec [[:a] even?
                           [:b] String
                           [:a] Number]
-            :constraints map-constraints
+            :constraints @#'clj-schema.schema/map-constraints
             :strict false}) loose)))
 
 (deftest test-strict-schema-and-as-loose-schema
@@ -34,21 +34,21 @@
             :schema-spec [[:a] even?
                           [:b] String
                           [:a] Number]
-            :constraints map-constraints
+            :constraints @#'clj-schema.schema/map-constraints
             :strict true}) strict)))
 
 (deftest test-def-loose-schema
   (is (= {:type :map
           :schema-spec [[:name :first] java.lang.String
                         [:height] java.lang.Number]
-          :constraints map-constraints
+          :constraints @#'clj-schema.schema/map-constraints
           :strict false}
          loose-person-schema)))
 
 (deftest test-def-map-schema
   (is (= {:type :map
           :schema-spec [[:name :first] java.lang.String [:height] java.lang.Number]
-          :constraints map-constraints
+          :constraints @#'clj-schema.schema/map-constraints
           :strict true}
          person-schema)))
 
@@ -89,12 +89,12 @@
   (is (= [[[:mom] {:type :map
                    :schema-spec [[:name :first] java.lang.String
                                  [:height] java.lang.Number]
-                   :constraints map-constraints
+                   :constraints @#'clj-schema.schema/map-constraints
                    :strict true}]
           [[:dad] {:type :map
                    :schema-spec [[:name :first] java.lang.String
                                  [:height] java.lang.Number]
-                   :constraints map-constraints
+                   :constraints @#'clj-schema.schema/map-constraints
                    :strict true}]]
          (schema-rows family-schema))))
 
