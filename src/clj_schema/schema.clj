@@ -112,28 +112,28 @@ map under-validation to have more keys than are specified in the schema."
 
 ;;;; Schemas for Specific Data Structures
 
-(defn- constraint-form [sub-schema-sexp]
+(defn- schema-form [sub-schema-sexp]
   `(let [sss# ~sub-schema-sexp]
      (assoc (if (schema? sss#) sss# (simple-schema sss#))
        :source '~sub-schema-sexp)))
 
-(defmacro ^{:private true} constraint [sub-schema-sexp]
-  (constraint-form sub-schema-sexp))
+(defmacro ^{:private true} make-schema [sub-schema-sexp]
+  (schema-form sub-schema-sexp))
 
 (defmacro constraints
   "Wrap a group of sub-schemas, so that they can be tested against
    the entire data structure in a surrounding schema."
   [& sub-schema-sexps]
-  {::constraint-bundle (vec (map constraint-form sub-schema-sexps))})
+  {::constraint-bundle (vec (map schema-form sub-schema-sexps))})
 
 (def ^{:doc "Constraints common to all map schemas"}
-  map-constraints [(constraint [:or nil? map?])])
+  map-constraints [(make-schema [:or nil? map?])])
 
 (def ^{:doc "Constraints common to all seq schemas"}
-  seq-constraints [(constraint [:or nil? sequential?])])
+  seq-constraints [(make-schema [:or nil? sequential?])])
 
 (def ^{:doc "Constraints common to all set schemas"}
-  set-constraints [(constraint [:or nil? set?])])
+  set-constraints [(make-schema [:or nil? set?])])
 
 (defn map-schema
   "Creates a schema for a map. looseness is either :loose or :strict. If :strict
@@ -187,7 +187,7 @@ map under-validation to have more keys than are specified in the schema."
        :schema-spec seq-layout
        :constraints (distinct (concat seq-constraints
                                       user-specified-constraints
-                                      [(constraint (fn [xs] (= (count seq-layout) (count xs))))]))}
+                                      [(make-schema (fn [xs] (= (count seq-layout) (count xs))))]))}
       {:type :seq
        :schema-spec schema
        :constraints (distinct (concat seq-constraints user-specified-constraints))})))
