@@ -43,11 +43,9 @@
   (predicate-fail-error [_ {:keys [full-path schema]} val-at-path pred]
     (if (empty? full-path)
       (format "Value %s did not match predicate '%s'."
-        (pr-str val-at-path) (or (:source schema)
-                               (u/pretty-fn-str pred)))
+              (pr-str val-at-path) (u/pretty-fn-str pred))
       (format "Value %s, at path %s, did not match predicate '%s'."
-        (pr-str val-at-path) full-path (or (:source schema)
-                                         (u/pretty-fn-str pred)))))
+              (pr-str val-at-path) full-path (u/pretty-fn-str pred))))
 
   (instance-of-fail-error [_ {:keys [full-path schema]} val-at-path expected-class]
     (if (empty? full-path)

@@ -12,23 +12,37 @@ Schemas for Clojure Data Structures and Values
 *   [Google Group](https://groups.google.com/forum/?fromgroups#!forum/clj-schema)
 
 
+Schemas
+=======
+
+There are three main types of schemas: `def-map-schema`, `def-seq-schema`, `def-set-schema`.  These 
+three all come with the built-in assumption that the target of the schema matches 
+the expected type, or is nil.
+
+There is also a category of schemas that can be applied to any type. We call these
+simple-schemas.
+
+If you don't create a simple-schema explicitly then in most cases 
+clj-schema will implicitly create one for you:
+
+`(validation-errors String "A")` is equivalent to `(validation-errors (simple-schema String) "A")`
+`(validation-errors number? 99)` is equivalent to `(validation-errors (simple-schema number?) 99)`
+`(validation-errors [number? pos?] 77)` is equivalent to `(validation-errors (simple-schema [number? pos?]) 77)`
+`(validation-errors [:or String Keyword] :a)` is... 
+  equivalent to `(validation-errors (simple-schema [number? pos?]) :a)`
+
+
 Map Schemas
 ===========
 
 Map schemas are defined with any number of paths through a nested map, paired
-with another schema to check it.
-
-There are 5 types of sub-schemas:
-
-*   any predicate function 
-*   any `Class` object, i.e. `String`, `clojure.lang.Keyword`, `java.util.Date`, etc 
-*   any clj-schema schema: def-map-schema, def-seq-schema, def-set-schema, def-simple-schema, etc
-*   `[schema1 schema2]` to indicate both schema1 AND schema2 
-*   `[:or schema1 schema2]` to indicate both schema1 OR schema2
+with another schema to check it.  The schemas to check it, can be any of:
+map-schema, seq-schema, set-schema, simple-schemas, or something that can 
+be converted to a simple-schema on the fly.
 
 Any schema may be wrapped in `sequence-of` to indicate the value should
-be sequential, or wrapped in `set-of` to indicate the value is a set. By
-default, schemas assume the value at a path to be a singular value.
+be sequential, or wrapped in `set-of` to indicate the value is a set.  These
+are aliases for `seq-schema` and `set-schema`
 
 A path may be marked as an `optional-path`. This means that is doesn't
 have to be present, but if it is, it must match the given schema.
@@ -36,12 +50,13 @@ have to be present, but if it is, it must match the given schema.
 Wildcard paths are paths where one or more peices are defined as anything
 matching a given schema.
 
-Example Schema:
+Example Kitches Sink Schema:
 
 ```clj
 (:require [clj-schema.schema :refer [def-map-schema optional-path sequence-of 
                                      map-schema set-of]])
 
+;; assuming we've already defined a z-schema and an r-schema
 (def-map-schema bar-schema 
   [[:a :b :c] pred 
    [:x :y :z] [pred2 pred3 z-schema] ;; implicit 'and' - all three must pass 
@@ -51,7 +66,7 @@ Example Schema:
    [:cat :colors] (set-of String)])]
    ```
 
-Example schema w/ wildcard paths:
+Example map schema w/ wildcard paths:
 
 ```clj
 (def-map-schema foo-schema 
@@ -70,7 +85,8 @@ Example schema w/ wildcard paths:
 {:a {}}
 ```
 
-You can combine more than one map schema into a combined schema like this:
+You can combine more than one map schema into a combined schema, that will simply check all
+paths (and constraints) from all included schemas. 
 
 ```clj
 (def-map-schema bar-schema
@@ -84,23 +100,26 @@ All schemas are just maps:
 ```clj
 (def-map-schema foo-schema [[:a] String])
 ;; foo-schema
-;; => {:type :map
-;;     :schema-spec [[:a] java.lang.String]
-;;     :constraints ({:predicate #<schema$fn__145 clj_schema.schema$fn__145@12948069>
-;;                    :source (fn [m] (or (nil? m) (map? m)))}) 
+;; => {:type :map 
+;;     :schema-spec [[:a] java.lang.String] 
+;;     :constraints [{:source [:or nil? map?]
+;;                    :type :or-statement
+;;                    :schema-spec [#<core$nil_QMARK_ clojure.core$nil_QMARK_@340ae1cf> 
+;;                                  #<core$map_QMARK_ clojure.core$map_QMARK_@366ef7ba>] 
+;;                    :constraints []}]
 ;;     :strict true}
 ```
 
-As you can see in the example above, `def-map-schema` creates a strict schema by default, which expects only the paths it describes to be present on the given map.
+`def-map-schema` creates a strict schema by default, which expects only the paths it describes to be present on the given map.
 
 `(def-map-schema :loose [[:a] String])` creates a loose schema, which expects its paths to be
-present but does not complain about extra paths
+present but does not complain about extra paths.
 
 
 Seq/Set Validation and Introducing Constraints
 ==================================================
 
-You can also add constraints: predicates that apply to the entire
+You can also add constraints: schemas, or simple schema precursors that apply to the entire
 data structure under validation:
 
 ```clj
@@ -173,9 +192,6 @@ find a variety of issues:
 (:require [clj-schema.validation :refer [validation-errors])
 
 (validation-errors person-schema {})
-```
-
-```clj
 ;; => #{"Map did not contain expected path [:name :first]." 
 ;;      "Map did not contain expected path [:name :last]."
 ;;      "Map did not contain expected path [:height]."}

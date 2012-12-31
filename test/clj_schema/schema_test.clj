@@ -26,16 +26,16 @@
             :strict false}) loose)))
 
 (deftest test-strict-schema-and-as-loose-schema
-  (let [strict (map-schema :strict
-                           [[:a] even?]
-                           [[:b] String
-                            [:a] Number])]
-    (is (= {:type :map
-            :schema-spec [[:a] even?
-                          [:b] String
-                          [:a] Number]
-            :constraints @#'clj-schema.schema/map-constraints
-            :strict true}) strict)))
+  (is (= {:type :map
+          :schema-spec [[:a] even?
+                        [:b] String
+                        [:a] Number]
+          :constraints @#'clj-schema.schema/map-constraints
+          :strict true}
+         (map-schema :strict
+                     [[:a] even?]
+                     [[:b] String
+                      [:a] Number]))))
 
 (deftest test-def-loose-schema
   (is (= {:type :map
