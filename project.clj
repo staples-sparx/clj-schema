@@ -5,7 +5,7 @@
   :url "https://github.com/runa-dev/clj-schema"
   :license {:name "MIT License"
             :url "http://mit-license.org/"}
-  :dependencies ~(cons '[org.clojure/clojure "1.2.0"]
+  :dependencies ~(cons '[org.clojure/clojure "1.2.1"]
                          common-deps)
   :dev-dependencies [[jonase/kibit "0.0.3"]
                      [jonase/eastwood "0.0.2"]

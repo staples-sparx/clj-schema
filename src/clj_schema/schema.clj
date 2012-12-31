@@ -97,6 +97,7 @@ map under-validation to have more keys than are specified in the schema."
 
    Can be used for any arbitrary data structure or value."
   [x]
+  {:pre [(not (schema? x))]}
   (cond (class? x) (class-schema x)
         (and (vector? x) (= :or (first x))) (or-statement-schema (rest x))
         (vector? x) (and-statement-schema x)
@@ -112,8 +113,9 @@ map under-validation to have more keys than are specified in the schema."
 ;;;; Schemas for Specific Data Structures
 
 (defn- constraint-form [sub-schema-sexp]
- `(assoc (simple-schema ~sub-schema-sexp)
-    :source '~sub-schema-sexp))
+  `(let [sss# ~sub-schema-sexp]
+     (assoc (if (schema? sss#) sss# (simple-schema sss#))
+       :source '~sub-schema-sexp)))
 
 (defmacro ^{:private true} constraint [sub-schema-sexp]
   (constraint-form sub-schema-sexp))

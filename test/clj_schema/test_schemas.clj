@@ -59,7 +59,8 @@
 ;;; 
 
 (def-map-schema :loose non-empty-map
-  (constraints (complement empty?)))
+  (constraints (simple-schema map?)
+               (complement empty?)))
 
 (def-map-schema unsorted-non-empty-map
   non-empty-map
