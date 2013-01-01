@@ -289,7 +289,9 @@ These should probably be renamed to something less confusing. Any ideas?
 
 ;; Fixture factories can also be defined as multi-arity
 (def-seq-schema :layout point-schema
-  [Long Long])
+  (constraints (fn [[x y]] 
+                 (= (class x) (class y))))
+  [Number Number])
 
 (def-fixture-factory point point-schema
   ([x y] 
