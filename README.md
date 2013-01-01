@@ -288,15 +288,14 @@ These should probably be renamed to something less confusing. Any ideas?
          (sort-people-by-height [(person :height 98) (person :height 67) (person :height 89)]))))
 
 ;; Fixture factories can also be defined as multi-arity
-(def-schema rectangle-schema
-  [[:height] Number 
-   [:width]  Number])
+(def-seq-schema :layout point-schema
+  [Long Long])
 
-(def-fixture-factory rectangle rectangle-schema
-  ([h w] 
-    {:height h :width w}) 
+(def-fixture-factory point point-schema
+  ([x y] 
+    [x y])
   ([length]
-    {:height length :width length}))
+    [length length]))
 ```
 
 
