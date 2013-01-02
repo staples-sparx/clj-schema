@@ -2,7 +2,7 @@ To Use
 ======
 
 ```clj
-[org.clojars.runa/clj-schema "0.8.1"]
+[org.clojars.runa/clj-schema "0.8.2"]
 ```
 
 Schemas for Clojure Data Structures and Values
@@ -329,9 +329,9 @@ Run them with `./run-tests.sh`.  This will run all unit tests in Clojure 1.2 - 1
 
 Contributors
 ============
-Alex Baranosky
-Laurent Petit
-Punit Rathore
+*   Alex Baranosky
+*   Laurent Petit
+*   Punit Rathore
 
 License
 =======

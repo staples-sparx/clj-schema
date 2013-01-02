@@ -103,6 +103,9 @@ map under-validation to have more keys than are specified in the schema."
         (vector? x) (and-statement-schema x)
         :else (predicate-schema x)))
 
+(defn- ensure-schema [x]
+  (if (schema? x) x (simple-schema x)))
+
 (defmacro def-simple-schema
   "Creates a named var for a simple-schema.  See `simple-schema` for more details."
   [name x]
@@ -144,7 +147,7 @@ map under-validation to have more keys than are specified in the schema."
         schema-spec? (fn [x] (and (vector? x) (not (constraint-bundle? x))))
         schema-specs (apply concat (filter schema-spec? constraints-and-schema-vectors))
         flattened-schema-specs (vec (concat inherited-schema-specs schema-specs))
-        compiled-schema-specs (u/map-nth 2 #(if (schema? %) % (simple-schema %)) flattened-schema-specs)]
+        compiled-schema-specs (u/map-nth 2 ensure-schema flattened-schema-specs)]
     (assert (even? (count schema-specs)))
     (assert (every? sequential? (schema-path-set {:schema-spec schema-specs})))
     {:type :map
@@ -180,12 +183,12 @@ map under-validation to have more keys than are specified in the schema."
     (assert (contains? #{:all :layout} all-or-layout))
     (if (= :layout all-or-layout)
       {:type :seq-layout
-       :schema-spec seq-layout
+       :schema-spec (vec (map ensure-schema seq-layout))
        :constraints (distinct (concat seq-constraints
                                       user-specified-constraints
                                       [(constraint (fn [xs] (= (count seq-layout) (count xs))))]))}
       {:type :seq
-       :schema-spec schema
+       :schema-spec (ensure-schema schema)
        :constraints (distinct (concat seq-constraints user-specified-constraints))})))
 
 (defmacro def-seq-schema
@@ -209,7 +212,7 @@ map under-validation to have more keys than are specified in the schema."
                                            (filter constraint-bundle? constraints-and-schema-specs))
         schema (first (remove constraint-bundle? constraints-and-schema-specs))]
     {:type :set
-     :schema-spec schema
+     :schema-spec (ensure-schema schema)
      :constraints (concat set-constraints user-specified-constraints)}))
 
 (defmacro def-set-schema
