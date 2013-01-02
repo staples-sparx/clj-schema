@@ -62,7 +62,7 @@ Example Map Schema:
    [:x :y :z] [pred2 pred3 z-schema] ;; implicit 'and' - all three must pass 
    [:p :q :r] [:or nil? r-schema] ;; an 'or' statement - need just one to pass 
    (optional-path [:z]) (sequence-of string?) 
-   [:a b :d] (map-schema :loose [[:cat :name] String ;; can use Java Class objects directly 
+   [:a b :d] (map-schema :loose [[:cat :name] String]) ;; can use Java Class objects directly 
    [:cat :colors] (set-of String)])]
    ```
 
