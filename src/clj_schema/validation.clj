@@ -156,22 +156,28 @@
   (some (partial covered-by-wildcard-path? path) *all-wildcard-paths*))
 
 (defn- extraneous-paths-errors []
-  (if (s/loose-schema? *schema-without-wildcard-paths*)
-    #{}
-    (set (for [xtra-path (extraneous-paths)
-               :when (not-any? matches-any-wildcard-path? (u/subpaths xtra-path))]
-           (extraneous-path-error *error-reporter*
-                                  (state-map-for-reporter *parent-path*)
-                                  (into *parent-path* xtra-path))))))
+  (set (for [xtra-path (extraneous-paths)
+             :when (not-any? matches-any-wildcard-path? (u/subpaths xtra-path))]
+         (extraneous-path-error *error-reporter*
+                                (state-map-for-reporter *parent-path*)
+                                (into *parent-path* xtra-path)))))
 
 (defn- constraint-errors []
   (set (for [c (:constraints *schema*)
              :when (not (valid? c *data-under-validation*))]
          (constraint-error *error-reporter* (state-map-for-reporter []) c))))
 
-(defn- map-validation-errors [parent-path schema m]
-  (binding [*all-wildcard-paths* (s/wildcard-path-set schema)
-            *schema-without-wildcard-paths* (s/subtract-wildcard-paths schema)]
+(defmacro ^{:private true} with-map-bindings [& body]
+  `(binding [*all-wildcard-paths* (s/wildcard-path-set *schema*)
+             *schema-without-wildcard-paths* (s/subtract-wildcard-paths *schema*)]
+     ~@body))
+
+(defn- map-loose-validation-errors [_parent-path_ _schema_ _m_]
+  (with-map-bindings
+    (path-content-errors)))
+
+(defn- map-strict-validation-errors [_parent-path_ _schema_ _m_]
+  (with-map-bindings
     (set/union (path-content-errors)
                (extraneous-paths-errors))))
 
@@ -219,15 +225,16 @@
       #{})))
 
 (defn- validation-fn [schema]
-  (case (:type schema)
-    :map map-validation-errors
-    :seq seq-validation-errors
-    :seq-layout seq-layout-validation-errors
-    :set set-validation-errors
-    :class class-validation-errors
-    :or-statement or-statement-validation-errors
-    :and-statement and-statement-validation-errors
-    :predicate predicate-validation-errors))
+  (case [(:type schema) (boolean (:strict schema))]
+    [:map false]           map-loose-validation-errors
+    [:map true]            map-strict-validation-errors
+    [:seq false]           seq-validation-errors
+    [:seq-layout false]    seq-layout-validation-errors
+    [:set false]           set-validation-errors
+    [:class false]         class-validation-errors
+    [:or-statement false]  or-statement-validation-errors
+    [:and-statement false] and-statement-validation-errors
+    [:predicate false]     predicate-validation-errors))
 
 (defn validation-errors
   "Returns a set of all the validation errors found when comparing a given
