@@ -29,7 +29,7 @@ clj-schema will implicitly create one for you:
 `(validation-errors number? 99)` is equivalent to `(validation-errors (simple-schema number?) 99)`
 `(validation-errors [number? pos?] 77)` is equivalent to `(validation-errors (simple-schema [number? pos?]) 77)`
 `(validation-errors [:or String Keyword] :a)` is... 
-  equivalent to `(validation-errors (simple-schema [number? pos?]) :a)`
+  equivalent to `(validation-errors (simple-schema [:or String Keyword]) :a)`
 
 
 Map Schemas
