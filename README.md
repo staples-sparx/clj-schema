@@ -2,7 +2,7 @@ To Use
 ======
 
 ```clj
-[org.clojars.runa/clj-schema "0.8.0"]
+[org.clojars.runa/clj-schema "0.8.1"]
 ```
 
 Schemas for Clojure Data Structures and Values
@@ -101,7 +101,7 @@ All schemas are just maps:
 (def-map-schema foo-schema [[:a] String])
 ;; foo-schema
 ;; => {:type :map 
-;;     :schema-spec [[:a] java.lang.String] 
+;;     :schema-spec [[:a] {:type :class, :schema-spec java.lang.String, :constraints []}]
 ;;     :constraints [{:source [:or nil? map?]
 ;;                    :type :or-statement
 ;;                    :schema-spec [#<core$nil_QMARK_ clojure.core$nil_QMARK_@340ae1cf> 

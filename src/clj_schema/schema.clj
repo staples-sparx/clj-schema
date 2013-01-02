@@ -143,11 +143,12 @@ map under-validation to have more keys than are specified in the schema."
         inherited-constraints (mapcat :constraints schemas)
         schema-spec? (fn [x] (and (vector? x) (not (constraint-bundle? x))))
         schema-specs (apply concat (filter schema-spec? constraints-and-schema-vectors))
-        flattened-schema-specs (vec (concat inherited-schema-specs schema-specs))]
+        flattened-schema-specs (vec (concat inherited-schema-specs schema-specs))
+        compiled-schema-specs (u/map-nth 2 #(if (schema? %) % (simple-schema %)) flattened-schema-specs)]
     (assert (even? (count schema-specs)))
     (assert (every? sequential? (schema-path-set {:schema-spec schema-specs})))
     {:type :map
-     :schema-spec flattened-schema-specs
+     :schema-spec compiled-schema-specs
      :constraints (distinct (concat map-constraints inherited-constraints user-specified-constraints))
      :strict (= :strict looseness)}))
 

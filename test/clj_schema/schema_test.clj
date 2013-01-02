@@ -14,22 +14,21 @@
 ;;; Creation
 
 (deftest test-loose-schema-and-as-strict-schmema
-  (let [loose (map-schema :loose
-                          [[:a] even?]
-                          [[:b] String
-                           [:a] Number])]
-    (is (= {:type :map
-            :schema-spec [[:a] even?
-                          [:b] String
-                          [:a] Number]
-            :constraints @#'clj-schema.schema/map-constraints
-            :strict false}) loose)))
+  (is (= {:type :map
+          :schema-spec [[:a] {:type :predicate, :schema-spec even?, :constraints []}
+                        [:b] {:type :class, :schema-spec java.lang.String, :constraints []}
+                        [:a] {:type :class, :schema-spec java.lang.Number, :constraints []}]
+  :constraints @#'clj-schema.schema/map-constraints
+  :strict false}
+          (map-schema :loose [[:a] even?]
+                             [[:b] String
+                              [:a] Number]))))
 
 (deftest test-strict-schema-and-as-loose-schema
   (is (= {:type :map
-          :schema-spec [[:a] even?
-                        [:b] String
-                        [:a] Number]
+          :schema-spec [[:a] {:type :predicate, :schema-spec even?, :constraints []}
+                        [:b] {:type :class, :schema-spec java.lang.String, :constraints []}
+                        [:a] {:type :class, :schema-spec java.lang.Number, :constraints []}]
           :constraints @#'clj-schema.schema/map-constraints
           :strict true}
          (map-schema :strict
@@ -39,15 +38,16 @@
 
 (deftest test-def-loose-schema
   (is (= {:type :map
-          :schema-spec [[:name :first] java.lang.String
-                        [:height] java.lang.Number]
+          :schema-spec [[:name :first] {:type :class, :schema-spec java.lang.String, :constraints []}
+                        [:height] {:type :class, :schema-spec java.lang.Number, :constraints []}]
           :constraints @#'clj-schema.schema/map-constraints
           :strict false}
          loose-person-schema)))
 
 (deftest test-def-map-schema
   (is (= {:type :map
-          :schema-spec [[:name :first] java.lang.String [:height] java.lang.Number]
+          :schema-spec [[:name :first] {:type :class, :schema-spec java.lang.String, :constraints []}
+                        [:height] {:type :class, :schema-spec java.lang.Number, :constraints []}]
           :constraints @#'clj-schema.schema/map-constraints
           :strict true}
          person-schema)))
@@ -69,8 +69,8 @@
 
 (deftest test-schemas-with-constraints
   (is (= 4 (count (keys schema-with-constraints))))
-  (is (= [[:a] java.lang.String
-          [:b] java.lang.Number]
+  (is (= [[:a] {:type :class, :schema-spec java.lang.String, :constraints []}
+          [:b] {:type :class, :schema-spec java.lang.Number, :constraints []}]
          (:schema-spec schema-with-constraints)))
   (is (= false (:strict schema-with-constraints)))
   (is (= 3 (count (:constraints schema-with-constraints))))
@@ -83,20 +83,20 @@
   (is (= #{[:mom] [:dad]} (schema-path-set family-schema))))
 
 (deftest test-schema-rows
-  (is (= [[[:name :first] java.lang.String]
-          [[:height] java.lang.Number]]
-         (schema-rows loose-person-schema)))
+  (is (= [[[:name :first] {:type :class, :schema-spec java.lang.String, :constraints []}]
+          [[:height] {:type :class, :schema-spec java.lang.Number, :constraints []}]]
+         )
   (is (= [[[:mom] {:type :map
-                   :schema-spec [[:name :first] java.lang.String
-                                 [:height] java.lang.Number]
+                   :schema-spec [[:name :first] {:type :class, :schema-spec java.lang.String, :constraints []}
+                                 [:height] {:type :class, :schema-spec java.lang.Number, :constraints []}]
                    :constraints @#'clj-schema.schema/map-constraints
                    :strict true}]
           [[:dad] {:type :map
-                   :schema-spec [[:name :first] java.lang.String
-                                 [:height] java.lang.Number]
+                   :schema-spec [[:name :first] {:type :class, :schema-spec java.lang.String, :constraints []}
+                                 [:height] {:type :class, :schema-spec java.lang.Number, :constraints []}]
                    :constraints @#'clj-schema.schema/map-constraints
                    :strict true}]]
-         (schema-rows family-schema))))
+         (schema-rows family-schema)))))
 
 (deftest test-optional-path
   (testing "optional paths are recognizable as such"

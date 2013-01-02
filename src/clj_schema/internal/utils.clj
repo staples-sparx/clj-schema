@@ -2,6 +2,16 @@
   (:require [clojure.string :as str]))
 
 
+;;; general purpose utils
+
+(defn map-nth [n f coll]
+  (map-indexed (fn [idx x]
+                 (if (zero? (rem (inc idx) n))
+                   (f x)
+                   x))
+               coll))
+
+
 ;;; for schema.clj
 
 (defn paths
