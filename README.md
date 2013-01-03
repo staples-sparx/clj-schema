@@ -157,11 +157,11 @@ data structure under validation:
   [white-row black-row white-row black-row white-row black-row white-row black-row])
 ```
 
-#### Sets schemas, for all your marble-based apps:
+#### Sets schemas:
 ```clj
-(def-set-schema bag-of-marbles
+(def-set-schema possible-states
   (constraints #(> 50 (count %)))
-  (OneOf :red :blue :green :yellow :striped :polka-dot :black :white))
+  #(re-matches #"state\d+" %)) 
 ```
 
 
