@@ -9,6 +9,7 @@ Schemas for Clojure Data Structures and Values
 ==============================================
 
 *   [Getting Started](https://github.com/runa-dev/clj-schema/wiki/Getting-Started)
+*   [API Docs](http://runa-dev.github.com/clj-schema/)
 *   [Google Group](https://groups.google.com/forum/?fromgroups#!forum/clj-schema)
 
 
