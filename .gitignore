@@ -8,3 +8,4 @@
 /.lein-deps-sum
 .idea/
 clj-schema.iml
+doc/**

@@ -158,9 +158,9 @@ map under-validation to have more keys than are specified in the schema."
 (defmacro def-map-schema
   "Creates a named var for a map-schema, defaults to being strict.  Can also be
    made loose by passing in :loose as the first parameter.  See `map-schema` for more details."
-  [& args]
   {:arglists '([name & constraints-and-schema-vectors]
                [looseness name & constraints-and-schema-vectors])}
+  [& args]
   (let [[looseness name & constraints-and-schema-vectors] (if (keyword? (first args))
                                                             args
                                                             (cons :strict args))]
@@ -193,9 +193,9 @@ map under-validation to have more keys than are specified in the schema."
 
 (defmacro def-seq-schema
   "Creates a named var for a seq-schema. See `seq-schema` for more details."
-  [& args]
   {:arglists '([name & constraints-and-schema-specs]
                [all-or-layout name & constraints-and-schema-specs])}
+  [& args]
   (let [[all-or-layout name & constraints-and-schema-specs] (if (keyword? (first args))
                                                             args
                                                             (cons :all args))]

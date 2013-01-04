@@ -8,9 +8,13 @@
              :dev {:dependencies [[jonase/kibit "0.0.3"]
                                   [jonase/eastwood "0.0.2"]
                                   [slamhound "1.3.0"]
-                                  [org.clojure/tools.trace "0.7.3"]]}
+                                  [org.clojure/tools.trace "0.7.3"]]
+                   :plugins [[codox "0.6.4"]]}
              :1.2.1 {:dependencies [[org.clojure/clojure "1.2.1"]]}
              :1.3.0 {:dependencies [[org.clojure/clojure "1.3.0"]]}
              :1.4.0 {:dependencies [[org.clojure/clojure "1.4.0"]]}
              :1.5.0 {:dependencies [[org.clojure/clojure "1.5.0-RC1"]]}}
-  :aliases {"slamhound" ["run" "-m" "slam.hound"]})
+  :aliases {"slamhound" ["run" "-m" "slam.hound"]}
+  :codox {:src-dir-uri "https://github.com/runa-dev/clj-schema/blob/master"
+          :src-linenum-anchor-prefix "L"
+          :exclude [clj-schema.internal.utils]})
