@@ -1,4 +1,1 @@
-lein multi test --with "1.2.1" ;
-lein multi test --with "1.3.0" ;
-lein multi test --with "1.4.0" ;
-lein multi test --with "1.5.0" 
+lein2 with-profile 1.2.1:1.3.0:1.4.0:1.5.0 test
