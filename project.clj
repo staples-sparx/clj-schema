@@ -2,6 +2,8 @@
   :min-lein-version "2.0.0"
   :description "Map schema definitions and validation library."
   :url "https://github.com/runa-dev/clj-schema"
+  :mailing-list {:name "Clj-schema Google Group"
+                 :subscribe "https://groups.google.com/forum/?fromgroups#!forum/clj-schema"}
   :license {:name "MIT License"
             :url "http://mit-license.org/"}
   :profiles {:user {:dependencies [[org.clojure/clojure "1.2.1"]]}
