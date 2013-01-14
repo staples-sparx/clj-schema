@@ -113,7 +113,7 @@ All schemas are just maps:
 
 `def-map-schema` creates a strict schema by default, which expects only the paths it describes to be present on the given map.
 
-`(def-map-schema :loose [[:a] String])` creates a loose schema, which expects its paths to be
+`(def-map-schema :loose my-schema [[:a] String])` creates a loose schema, which expects its paths to be
 present but does not complain about extra paths.
 
 
