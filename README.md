@@ -2,7 +2,7 @@ To Use
 ======
 
 ```clj
-[org.clojars.runa/clj-schema "0.8.2"]
+[org.clojars.runa/clj-schema "0.8.3"]
 ```
 
 Schemas for Clojure Data Structures and Values

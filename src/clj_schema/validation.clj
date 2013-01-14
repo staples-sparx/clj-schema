@@ -208,10 +208,11 @@
 (defn- or-statement-validation-errors [parent-path schema x]
   (let [schemas (:schema-spec schema)
         error-msg-batches (map #(validation-errors *error-reporter* parent-path % x) schemas)
-        error-msgs        (set (apply concat error-msg-batches))]
-    (if-not (< (count (remove empty? error-msg-batches))
+        error-msgs        (set (apply concat error-msg-batches))
+        non-empty-batches (remove empty? error-msg-batches)]
+    (if-not (< (count non-empty-batches)
                (count schemas))
-      error-msgs
+      (first non-empty-batches)
       #{})))
 
 (defn- and-statement-validation-errors [parent-path schema x]
