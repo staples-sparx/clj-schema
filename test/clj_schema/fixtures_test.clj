@@ -48,4 +48,5 @@
 
   (testing "return values that don't pass validation throw AssertionErrors"
     (is (thrown? AssertionError (a-factory :name 555 :height "Bob")))
+    (is (thrown-with-msg? AssertionError #"Was passed these keyword args" (a-factory :unspecified-key 777)))
     (is (thrown? AssertionError (b-factory 555)))))

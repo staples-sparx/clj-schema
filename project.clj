@@ -1,4 +1,4 @@
-(defproject org.clojars.runa/clj-schema "0.8.3"
+(defproject org.clojars.runa/clj-schema "0.8.4"
   :min-lein-version "2.0.0"
   :description "Map schema definitions and validation library."
   :url "https://github.com/runa-dev/clj-schema"
@@ -12,11 +12,10 @@
                                   [org.clojure/tools.trace "0.7.3"]]
                    :plugins [[codox "0.6.4"]
                              [jonase/eastwood "0.0.2"]]}
-             :1.2.1 {:dependencies [[org.clojure/clojure "1.2.1"]]}
              :1.3.0 {:dependencies [[org.clojure/clojure "1.3.0"]]}
              :1.4.0 {:dependencies [[org.clojure/clojure "1.4.0"]]}
-             :1.5.0 {:dependencies [[org.clojure/clojure "1.5.0-RC1"]]}}
-  :aliases {"run-tests" ["with-profile" "1.2.1:1.3.0:1.4.0:1.5.0" "test"]
+             :1.5.0 {:dependencies [[org.clojure/clojure "1.5.0-RC4"]]}}
+  :aliases {"run-tests" ["with-profile" "1.3.0:1.4.0:1.5.0" "test"]
             "slamhound" ["run" "-m" "slam.hound"]}
   :codox {:src-dir-uri "https://github.com/runa-dev/clj-schema/blob/master"
           :src-linenum-anchor-prefix "L"

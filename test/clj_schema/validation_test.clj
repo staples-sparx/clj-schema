@@ -554,7 +554,7 @@
 (deftest test-simple-schemas
   (is (= #{}
          (validation-errors String "neat")))
-  (is (= #{"Expected value 44 to be an instance of class java.lang.String, but was java.lang.Integer"}
+  (is (= #{"Expected value 44 to be an instance of class java.lang.String, but was java.lang.Long"}
          (validation-errors String 44)))
 
   (is (= #{}
