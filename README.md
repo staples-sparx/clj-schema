@@ -8,7 +8,7 @@ To Use
 Travis CI Status
 ================
 
-[![Build Status](https://travis-ci.org/AlexBaranosky/clj-schema.png)](https://travis-ci.org/AlexBaranosky/clj-schema)
+[![Build Status](https://travis-ci.org/runa-dev/clj-schema.png)](https://travis-ci.org/runa-dev/clj-schema)
 
 Schemas for Clojure Data Structures and Values
 ==============================================
