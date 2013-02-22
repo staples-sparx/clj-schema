@@ -5,6 +5,11 @@ To Use
 [org.clojars.runa/clj-schema "0.8.3"]
 ```
 
+Travis CI Status
+================
+
+[![Build Status](https://travis-ci.org/AlexBaranosky/clj-schema.png)](https://travis-ci.org/AlexBaranosky/clj-schema)
+
 Schemas for Clojure Data Structures and Values
 ==============================================
 
