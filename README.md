@@ -2,7 +2,7 @@ To Use
 ======
 
 ```clj
-[org.clojars.runa/clj-schema "0.8.3"]
+[org.clojars.runa/clj-schema "0.8.2"]
 ```
 
 Travis CI Status
