@@ -98,7 +98,7 @@ paths (and constraints) from all included schemas.
 (def-map-schema bar-schema
   foo-schema
   [[:bar] String
-   [:baz] #"^.*baz.*$"])
+   [:baz] #"baz"])
 ```
 
 All schemas are just maps:
