@@ -94,7 +94,7 @@ map under-validation to have more keys than are specified in the schema."
   [regex]
   {:type :predicate
    :schema-spec #(re-find regex %)
-   :source `(~'fn [~'s] (~'re-find ~(symbol "#")~(str regex) ~'s))
+   :source  (list 'fn '[s] (list 're-find (symbol (str "#'\"" regex "\"")) 's))
    :constraints []})
 
 (defn simple-schema

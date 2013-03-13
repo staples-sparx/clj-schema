@@ -559,7 +559,7 @@
 
   (is (= #{}
          (validation-errors #"neat" "neato")))
-  (is (= #{"Value \"neat\" did not match predicate '(fn [s] (re-find # \"^neato$\" s))'."}
+  (is (= #{"Value \"neat\" did not match predicate '(fn [s] (re-find #'\"^neato$\" s))'."}
          (validation-errors #"^neato$" "neat")))
   
   (is (= #{}
