@@ -136,12 +136,12 @@
 ;;;; when both :or options fail - see errors for both 'nil?' and 'person-schema'
        [[:a] [:or nil? person-schema]]
        {:a {:name {:first "Roberto"} :height "66"}}
-       #{"Value {:name {:first \"Roberto\"}, :height \"66\"}, at path [:a], did not match predicate 'nil?'."}
+       #{"Expected value \"66\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String" "Value {:name {:first \"Roberto\"}, :height \"66\"}, at path [:a], did not match predicate 'nil?'."}
 
 ;;;; or collects all failures in the sequence being checked
        [[:a] (sequence-of [:or nil? person-schema])]
        {:a [{:name {:first "Roberto"} :height "88"} {:name {:first "Roberto"} :height 88}]}
-       #{"Value {:name {:first \"Roberto\"}, :height \"88\"}, at path [:a 0], did not match predicate 'nil?'."}
+       #{"Expected value \"88\", at path [:a 0 :height], to be an instance of class java.lang.Number, but was java.lang.String" "Value {:name {:first \"Roberto\"}, :height \"88\"}, at path [:a 0], did not match predicate 'nil?'."}
 
 ;;;; nested schemas - no errors
        [[:a :family] family-schema]
@@ -560,9 +560,9 @@
   (is (= #{}
          (validation-errors [:or String Number] "neat")
          (validation-errors [:or String Number] 55)))
-  (is (= #{"Expected value :keyword to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
+  (is (= #{"Expected value :keyword to be an instance of class java.lang.Number, but was clojure.lang.Keyword" "Expected value :keyword to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
          (validation-errors [:or String Number] :keyword)))
-    (is (= #{"Expected value :keyword to be an instance of class java.lang.Number, but was clojure.lang.Keyword"}
+    (is (= #{"Expected value :keyword to be an instance of class java.lang.Number, but was clojure.lang.Keyword" "Expected value :keyword to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
          (validation-errors [:or Number String] :keyword)))
 
   (is (= #{}
