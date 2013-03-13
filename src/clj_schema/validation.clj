@@ -25,6 +25,10 @@
   (instance-of-fail-error [this state val-at-path expected-class]
     "Caused by the value not being the expected Class, and not being a subtype of the expected Class"))
 
+(defn- intelli-print [schema f]
+  (or (:source schema)
+      (u/pretty-fn-str f)))
+
 (deftype StringErrorReporter []
   ErrorReporter
   (constraint-error [_ {:keys [parent-path data-under-validation]} constraint]
@@ -43,9 +47,9 @@
   (predicate-fail-error [_ {:keys [full-path schema]} val-at-path pred]
     (if (empty? full-path)
       (format "Value %s did not match predicate '%s'."
-              (pr-str val-at-path) (u/pretty-fn-str pred))
+              (pr-str val-at-path) (intelli-print schema pred))
       (format "Value %s, at path %s, did not match predicate '%s'."
-              (pr-str val-at-path) full-path (u/pretty-fn-str pred))))
+              (pr-str val-at-path) full-path (intelli-print schema pred))))
 
   (instance-of-fail-error [_ {:keys [full-path schema]} val-at-path expected-class]
     (if (empty? full-path)
@@ -245,13 +249,13 @@
   ([error-reporter schema x]
      (validation-errors error-reporter [] schema x))
   ([error-reporter parent-path schema x]
+    (let [schema (if (s/schema? schema)
+                   schema
+                   (s/simple-schema schema))]
      (binding [*error-reporter* error-reporter
                *data-under-validation* x
                *schema* schema
                *parent-path* parent-path]
-       (let [schema (if (s/schema? schema)
-                      schema
-                      (s/simple-schema schema))]
          (if-let [c-errors (seq (constraint-errors))]
            (set c-errors)
            ((validation-fn schema) parent-path schema x))))))

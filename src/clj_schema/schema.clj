@@ -88,6 +88,15 @@ map under-validation to have more keys than are specified in the schema."
    :schema-spec pred
    :constraints []})
 
+(defn regex-schema
+  "Creates a schema that states the item should match the supplied
+   regex, using `re-find` semantics."
+  [regex]
+  {:type :predicate
+   :schema-spec #(re-find regex %)
+   :source `(~'fn [~'s] (~'re-find ~(symbol "#")~(str regex) ~'s))
+   :constraints []})
+
 (defn simple-schema
   "Makes a simple schema from x.
    If x is a Class, makes a class-schema.
@@ -98,7 +107,8 @@ map under-validation to have more keys than are specified in the schema."
    Can be used for any arbitrary data structure or value."
   [x]
   {:pre [(not (schema? x))]}
-  (cond (class? x) (class-schema x)
+  (cond (instance? java.util.regex.Pattern x) (regex-schema x)
+        (class? x) (class-schema x)
         (and (vector? x) (= :or (first x))) (or-statement-schema (rest x))
         (vector? x) (and-statement-schema x)
         :else (predicate-schema x)))

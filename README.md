@@ -2,7 +2,7 @@ To Use
 ======
 
 ```clj
-[org.clojars.runa/clj-schema "0.8.5"]
+[org.clojars.runa/clj-schema "0.8.6"]
 ```
 
 Travis CI Status
@@ -98,7 +98,7 @@ paths (and constraints) from all included schemas.
 (def-map-schema bar-schema
   foo-schema
   [[:bar] String
-   [:baz] #(re-matches #".*baz.*" %)])
+   [:baz] #"^.*baz.*$"])
 ```
 
 All schemas are just maps:

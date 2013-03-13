@@ -558,6 +558,11 @@
          (validation-errors String 44)))
 
   (is (= #{}
+         (validation-errors #"neat" "neato")))
+  (is (= #{"Value \"neat\" did not match predicate '(fn [s] (re-find # \"^neato$\" s))'."}
+         (validation-errors #"^neato$" "neat")))
+  
+  (is (= #{}
          (validation-errors [:or String Number] "neat")
          (validation-errors [:or String Number] 55)))
   (is (= #{"Expected value :keyword to be an instance of class java.lang.Number, but was clojure.lang.Keyword" "Expected value :keyword to be an instance of class java.lang.String, but was clojure.lang.Keyword"}

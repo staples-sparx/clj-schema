@@ -1,4 +1,4 @@
-(defproject org.clojars.runa/clj-schema "0.8.5"
+(defproject org.clojars.runa/clj-schema "0.8.6"
   :min-lein-version "2.0.0"
   :description "Map schema definitions and validation library."
   :url "https://github.com/runa-dev/clj-schema"
@@ -6,7 +6,7 @@
                  :subscribe "https://groups.google.com/forum/?fromgroups#!forum/clj-schema"}
   :license {:name "MIT License"
             :url "http://mit-license.org/"}
-  :profiles {:user {:dependencies [[org.clojure/clojure "1.2.1"]]}
+  :profiles {:user {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :dev {:dependencies [[jonase/kibit "0.0.3"]
                                   [slamhound "1.3.0"]
                                   [org.clojure/tools.trace "0.7.3"]]
