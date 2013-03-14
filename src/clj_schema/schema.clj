@@ -119,9 +119,8 @@ map under-validation to have more keys than are specified in the schema."
 (defmacro def-simple-schema
   "Creates a named var for a simple-schema.  See `simple-schema` for more details."
   [name x]
-  `(-> (def ~name (simple-schema ~x))
-       (alter-meta! assoc ::schema true)))
-
+   `(def ~(vary-meta name assoc ::schema true)
+      (simple-schema ~x)))
 
 ;;;; Schemas for Specific Data Structures
 
@@ -175,8 +174,8 @@ map under-validation to have more keys than are specified in the schema."
                                                             args
                                                             (cons :strict args))]
     (assert (contains? #{:strict :loose} looseness))
-    `(-> (def ~name (map-schema ~looseness ~@constraints-and-schema-vectors))
-         (alter-meta! assoc ::schema true ::strict ~(= :strict looseness)))))
+    `(def ~(vary-meta name assoc ::schema true ::strict (= :strict looseness))
+       (map-schema ~looseness ~@constraints-and-schema-vectors))))
 
 (defn seq-schema
   "Creates a schema for a sequence. Every element of the sequence should match
@@ -210,8 +209,8 @@ map under-validation to have more keys than are specified in the schema."
                                                             args
                                                             (cons :all args))]
     (assert (contains? #{:all :layout} all-or-layout))
-    `(-> (def ~name (seq-schema ~all-or-layout ~@constraints-and-schema-specs))
-         (alter-meta! assoc ::schema true))))
+    `(def ~(vary-meta name assoc ::schema true)
+       (seq-schema ~all-or-layout ~@constraints-and-schema-specs))))
 
 (defn set-schema
   "Creates a schema for a set. Every element of the set should match
@@ -228,8 +227,8 @@ map under-validation to have more keys than are specified in the schema."
 (defmacro def-set-schema
   "Creates a named var for a set-schema. See `set-schema` for more details."
   [name & constraints-and-schema-specs]
-  `(-> (def ~name (set-schema ~@constraints-and-schema-specs))
-       (alter-meta! assoc ::schema true)))
+  `(def ~(vary-meta name assoc ::schema true)
+     (set-schema ~@constraints-and-schema-specs)))
 
 (defn sequence-of
   "Wraps a schema to make it a schema that apply to every element of a sequential"
