@@ -251,7 +251,7 @@
   ([error-reporter parent-path schema x]
     (let [schema (if (s/schema? schema)
                    schema
-                   (s/simple-schema* schema))]
+                   (s/simple-schema schema))]
      (binding [*error-reporter* error-reporter
                *data-under-validation* x
                *schema* schema
