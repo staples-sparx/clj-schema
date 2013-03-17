@@ -83,10 +83,13 @@ map under-validation to have more keys than are specified in the schema."
   "Creates a schema that states the item should match
    the supplied predicate.
    Can be used for any arbitrary data structure or value."
-  [pred]
-  {:type :predicate
-   :schema-spec pred
-   :constraints []})
+  ([pred]
+   (predicate-schema pred nil))
+  ([pred source]
+    {:type :predicate
+     :schema-spec pred
+     :constraints []
+     :source source}))
 
 (defn regex-schema
   "Creates a schema that states the item should match the supplied
@@ -97,7 +100,14 @@ map under-validation to have more keys than are specified in the schema."
    :source  (list 'fn '[s] (list 're-find (symbol (str "#\"" regex "\"")) 's))
    :constraints []})
 
-(defn simple-schema
+(defn simple-schema* [x]
+  (cond (instance? java.util.regex.Pattern x) (regex-schema x)
+    (class? x) (class-schema x)
+    (and (vector? x) (= :or (first x))) (or-statement-schema (rest x))
+    (vector? x) (and-statement-schema x)
+    :else (predicate-schema x)))
+
+(defmacro simple-schema
   "Makes a simple schema from x.
    If x is a Class, makes a class-schema.
    If x looks like [:or x y], makes an or-statement-schema.
@@ -107,14 +117,15 @@ map under-validation to have more keys than are specified in the schema."
    Can be used for any arbitrary data structure or value."
   [x]
   {:pre [(not (schema? x))]}
-  (cond (instance? java.util.regex.Pattern x) (regex-schema x)
-        (class? x) (class-schema x)
-        (and (vector? x) (= :or (first x))) (or-statement-schema (rest x))
-        (vector? x) (and-statement-schema x)
-        :else (predicate-schema x)))
+  `(let [x# ~x]
+     (cond (instance? java.util.regex.Pattern x#) (regex-schema x#)
+           (class? x#) (class-schema x#)
+           (and (vector? x#) (= :or (first x#))) (or-statement-schema (rest x#))
+           (vector? x#) (and-statement-schema x#)
+           :else (predicate-schema x# '~x))))
 
 (defn- ensure-schema [x]
-  (if (schema? x) x (simple-schema x)))
+  (if (schema? x) x (simple-schema* x)))
 
 (defmacro def-simple-schema
   "Creates a named var for a simple-schema.  See `simple-schema` for more details."

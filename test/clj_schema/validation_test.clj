@@ -579,7 +579,19 @@
   (is (= #{}
          (validation-errors string? "string")))
   (is (= #{"Value 99 did not match predicate 'string?'."}
-         (validation-errors string? 99))))
+         (validation-errors string? 99)))
+
+  (is (= #{"Value 99 did not match predicate '(comp empty? str)'."}
+         (validation-errors (simple-schema (comp empty? str)) 99)))
+
+  (is (= #{"Value 99 did not match predicate '(comp empty? str)'."}
+         (validation-errors (comp empty? str) 99)))
+
+  (is (= #{"Value 99 did not match predicate '(partial = \"123\")'."}
+        (validation-errors (simple-schema (partial = "123")) 99)))
+
+  (is (= #{"Value 99 did not match predicate '(fn [s] (= s \"123\"))'."}
+        (validation-errors (simple-schema (fn [s] (= s "123"))) 99))))
 
 (deftest test-seq-layouts
   (is (= #{}
