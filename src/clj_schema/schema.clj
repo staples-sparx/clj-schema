@@ -113,7 +113,10 @@ map under-validation to have more keys than are specified in the schema."
         (vector? x) (and-statement-schema x)
         :else (predicate-schema x)))
 
-(defn- ensure-schema [x]
+(defn ensure-schema
+  "Takes any x.  If it is already a schema, returns it, otherwise attempts to
+   create a simple schema from it."
+  [x]
   (if (schema? x) x (simple-schema x)))
 
 (defmacro def-simple-schema
@@ -237,6 +240,15 @@ map under-validation to have more keys than are specified in the schema."
 
 (def ^{:doc "Wraps a schema to make it a schema that apply to every element of a set"}
   set-of set-schema)
+
+(defn ->string-schema
+  "Wraps a schema. Returns a new schema that is a String that when read matches
+   the wrapped schema.
+
+   Ex. (validation-errors (->string-schema (sequence-of Long)) \"[55, -33]\")
+       ;; => #{}"
+  [schema]
+  (assoc (ensure-schema schema) :pre-validation-transform #'read-string))
 
 
 ;; Wildcard Paths

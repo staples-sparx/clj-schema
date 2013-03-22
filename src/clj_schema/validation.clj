@@ -23,7 +23,9 @@
   (predicate-fail-error [this state val-at-path pred]
     "Caused by a predicate schema returning false or nil")
   (instance-of-fail-error [this state val-at-path expected-class]
-    "Caused by the value not being the expected Class, and not being a subtype of the expected Class"))
+    "Caused by the value not being the expected Class, and not being a subtype of the expected Class")
+  (pre-validation-transform-error [this state val-at-path pre-validation-transform-fn]
+    "Caused by the value not being able to be transformed into a validatable form"))
 
 (defn- intelli-print [schema f]
   (or (:source schema)
@@ -56,11 +58,19 @@
       (format "Expected value %s to be an instance of class %s, but was %s"
         (pr-str val-at-path) (pr-str expected-class) (pr-str (class val-at-path)))
       (format "Expected value %s, at path %s, to be an instance of class %s, but was %s"
-        (pr-str val-at-path) full-path (pr-str expected-class) (pr-str (class val-at-path))))))
+        (pr-str val-at-path) full-path (pr-str expected-class) (pr-str (class val-at-path)))))
+
+  (pre-validation-transform-error [_ {:keys [full-path schema]} val-at-path pre-validation-transform-fn]
+    (if (empty? full-path)
+      (format "Value %s could not be transformed before validation using '%s'."
+        (pr-str val-at-path) pre-validation-transform-fn)
+      (format "Value %s, at path %s, could not be transformed before validation using '%s'."
+        (pr-str val-at-path) full-path pre-validation-transform-fn))))
 
 ;; used to hold state of one `validation-errors` calculation
 (def ^{:private true :dynamic true} *error-reporter* nil)
 (def ^{:private true :dynamic true} *data-under-validation* nil)
+(def ^{:private true :dynamic true} *data-under-validation---post-transformation* nil)
 (def ^{:private true :dynamic true} *schema* nil)
 (def ^{:private true :dynamic true} *parent-path* nil)
 (def ^{:private true :dynamic true} *all-wildcard-paths* nil)
@@ -91,7 +101,7 @@
         (vec (cons k-that-matches-schema one-of-the-concrete-path-ends))))))
 
 (defn- errors-for-concrete-path [schema-path schema]
-  (let [val-at-path (get-in *data-under-validation* schema-path ::not-found)
+  (let [val-at-path (get-in *data-under-validation---post-transformation* schema-path ::not-found)
         contains-path? (not= ::not-found val-at-path)
         full-path (into *parent-path* schema-path)]
     (cond (and (not contains-path?) (s/optional-path? schema-path))
@@ -105,7 +115,7 @@
 
 (defn- errors-for-possibly-wildcard-path [schema-path schema]
   (if (s/wildcard-path? schema-path)
-    (let [concrete-paths (wildcard-path->concrete-paths *data-under-validation* schema-path)
+    (let [concrete-paths (wildcard-path->concrete-paths *data-under-validation---post-transformation* schema-path)
           ;; TODO ALex - Sep 15, 2012 - this is here because metadata lost - add abstraction to keep metadata for schemas across a translation
           concrete-paths (if (s/optional-path? schema-path) (map s/optional-path concrete-paths) concrete-paths)]
       (mapcat #(errors-for-concrete-path % schema) concrete-paths))
@@ -137,7 +147,7 @@
 
 (defn- extraneous-paths []
   (let [schema-paths (set (remove-subpaths (s/schema-path-set *schema-without-wildcard-paths*)))
-        shortened (shorten-to-schema-path-set (u/paths *data-under-validation*) schema-paths)]
+        shortened (shorten-to-schema-path-set (u/paths *data-under-validation---post-transformation*) schema-paths)]
     (set/difference shortened schema-paths)))
 
 (defn- covered-by-wildcard-path? [[path-first & path-rest :as path-to-check] [wildcard-first & wildcard-rest :as wildcard-path]]
@@ -168,7 +178,7 @@
 
 (defn- constraint-errors []
   (set (for [c (:constraints *schema*)
-             :when (not (valid? c *data-under-validation*))]
+             :when (not (valid? c *data-under-validation---post-transformation*))]
          (constraint-error *error-reporter* (state-map-for-reporter []) c))))
 
 (defmacro ^{:private true} with-map-bindings [& body]
@@ -224,7 +234,7 @@
 
 (defn- predicate-validation-errors [parent-path schema x]
   (let [pred (:schema-spec schema)]
-    (if-not ((u/fn->fn-thats-false-if-throws pred) x)  ;; keeps us safe from ClassCastExceptions
+    (if-not ((u/fn->fn-thats-false-if-throws pred) x)
       #{(predicate-fail-error *error-reporter* (state-map-for-reporter parent-path) x pred)}
       #{})))
 
@@ -240,6 +250,14 @@
     [:and-statement false] and-statement-validation-errors
     [:predicate false]     predicate-validation-errors))
 
+(defn- prepare-for-validation [schema x]
+  (try
+    (if-let [transform (:pre-validation-transform schema)]
+      (transform x)
+      x)
+    (catch Exception _
+      ::exception)))
+
 (defn validation-errors
   "Returns a set of all the validation errors found when comparing a given
    item x, against the supplied schema.
@@ -249,16 +267,18 @@
   ([error-reporter schema x]
      (validation-errors error-reporter [] schema x))
   ([error-reporter parent-path schema x]
-    (let [schema (if (s/schema? schema)
-                   schema
-                   (s/simple-schema schema))]
-     (binding [*error-reporter* error-reporter
-               *data-under-validation* x
-               *schema* schema
-               *parent-path* parent-path]
-         (if-let [c-errors (seq (constraint-errors))]
-           (set c-errors)
-           ((validation-fn schema) parent-path schema x))))))
+    (let [schema (s/ensure-schema schema)
+          prepped-x (prepare-for-validation schema x)]
+        (binding [*error-reporter* error-reporter
+                  *data-under-validation* x
+                  *data-under-validation---post-transformation* prepped-x
+                  *schema* schema
+                  *parent-path* parent-path]
+          (if (= ::exception prepped-x)
+            #{(pre-validation-transform-error *error-reporter* (state-map-for-reporter *parent-path*) x (:pre-validation-transform *schema*))}
+            (if-let [c-errors (seq (constraint-errors))]
+              (set c-errors)
+              ((validation-fn schema) parent-path schema prepped-x)))))))
 
 (defn valid?
   "Returns true if calling `validation-errors` would return no errors"
