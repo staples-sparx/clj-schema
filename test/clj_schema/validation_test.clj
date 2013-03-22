@@ -584,13 +584,14 @@
 (deftest test->string-schema
   (is (= #{} (validation-errors (->string-schema [Long neg?]) "-55")))
   (is (= #{} (validation-errors (->string-schema pos?) "55")))
-  (is (= #{} (validation-errors (->string-schema neg?) "55")))
   (is (= #{} (validation-errors (->string-schema (set-of Long)) "#{55, 44, -33}")))
 
   (is (= #{"Expected value :a, at path [0], to be an instance of class java.lang.Long, but was clojure.lang.Keyword"}
-        (validation-errors (->string-schema (sequence-of Long)) "[:a, 44, -33]")))
+         (validation-errors (->string-schema (sequence-of Long)) "[:a, 44, -33]")))
+  (is (= #{"Value 55 did not match predicate 'neg?'."}
+         (validation-errors (->string-schema neg?) "55")))
   (is (= #{"Value 55 could not be transformed before validation using '#'clojure.core/read-string'."}
-        (validation-errors (->string-schema [Long pos?]) 55))))
+         (validation-errors (->string-schema [Long pos?]) 55))))
 
 (deftest test-seq-layouts
   (is (= #{}
