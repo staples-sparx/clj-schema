@@ -114,9 +114,11 @@ map under-validation to have more keys than are specified in the schema."
         (class? x) (class-schema x)
         (and (vector? x) (= :or (first x))) (or-statement-schema (rest x))
         (vector? x) (and-statement-schema x)
-        (not (instance? clojure.lang.IFn x)) (predicate-schema (partial = x)
-                                                               (list 'fn '[x] (list '= x 'x)))
-        :else (predicate-schema x)))
+        (or (fn? x)
+            (map? x)
+            (set? x)) (predicate-schema x)
+        :else (predicate-schema (partial = x)
+                                (list 'fn '[x] (list '= x 'x)))))
 
 (defn ensure-schema
   "Takes any x.  If it is already a schema, returns it, otherwise attempts to

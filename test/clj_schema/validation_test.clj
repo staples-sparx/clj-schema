@@ -585,7 +585,12 @@
   (is (= #{}
          (validation-errors 1 1)))
   (is (= #{"Value 99 did not match predicate '(fn [x] (= 1 x))'."}
-         (validation-errors 1 99))))
+         (validation-errors 1 99)))
+  
+  (is (= #{}
+         (validation-errors :a :a)))
+  (is (= #{"Value {:a true} did not match predicate '(fn [x] (= :a x))'."}
+         (validation-errors :a {:a true}))))
 
 (deftest test->string-schema
   (is (= #{} (validation-errors (->string-schema [Long neg?]) "-55")))
