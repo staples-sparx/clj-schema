@@ -83,10 +83,13 @@ map under-validation to have more keys than are specified in the schema."
   "Creates a schema that states the item should match
    the supplied predicate.
    Can be used for any arbitrary data structure or value."
-  [pred]
-  {:type :predicate
-   :schema-spec pred
-   :constraints []})
+  ([pred]
+     (predicate-schema pred nil))
+  ([pred source]
+     {:type :predicate
+      :schema-spec pred
+      :constraints []
+      :source source}))
 
 (defn regex-schema
   "Creates a schema that states the item should match the supplied
@@ -111,6 +114,8 @@ map under-validation to have more keys than are specified in the schema."
         (class? x) (class-schema x)
         (and (vector? x) (= :or (first x))) (or-statement-schema (rest x))
         (vector? x) (and-statement-schema x)
+        (not (instance? clojure.lang.IFn x)) (predicate-schema (partial = x)
+                                                               (list 'fn '[x] (list '= x 'x)))
         :else (predicate-schema x)))
 
 (defn ensure-schema

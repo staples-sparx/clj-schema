@@ -576,10 +576,16 @@
            "Expected value :keyword to be an instance of class java.lang.Long, but was clojure.lang.Keyword"}
          (validation-errors [Number Long] :keyword)))
 
+  
   (is (= #{}
          (validation-errors string? "string")))
   (is (= #{"Value 99 did not match predicate 'string?'."}
-         (validation-errors string? 99))))
+         (validation-errors string? 99)))
+  
+  (is (= #{}
+         (validation-errors 1 1)))
+  (is (= #{"Value 99 did not match predicate '(fn [x] (= 1 x))'."}
+         (validation-errors 1 99))))
 
 (deftest test->string-schema
   (is (= #{} (validation-errors (->string-schema [Long neg?]) "-55")))

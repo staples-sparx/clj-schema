@@ -15,7 +15,7 @@
 
 (deftest test-loose-schema-and-as-strict-schmema
   (is (= {:type :map
-          :schema-spec [[:a] {:type :predicate, :schema-spec even?, :constraints []}
+          :schema-spec [[:a] {:type :predicate, :schema-spec even?, :constraints [], :source nil}
                         [:b] {:type :class, :schema-spec java.lang.String, :constraints []}
                         [:a] {:type :class, :schema-spec java.lang.Number, :constraints []}]
   :constraints @#'clj-schema.schema/map-constraints
@@ -26,7 +26,7 @@
 
 (deftest test-strict-schema-and-as-loose-schema
   (is (= {:type :map
-          :schema-spec [[:a] {:type :predicate, :schema-spec even?, :constraints []}
+          :schema-spec [[:a] {:type :predicate, :schema-spec even?, :constraints [], :source nil}
                         [:b] {:type :class, :schema-spec java.lang.String, :constraints []}
                         [:a] {:type :class, :schema-spec java.lang.Number, :constraints []}]
           :constraints @#'clj-schema.schema/map-constraints
