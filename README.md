@@ -2,7 +2,7 @@ To Use
 ======
 
 ```clj
-[org.clojars.runa/clj-schema "0.8.6"]
+[org.clojars.runa/clj-schema "0.8.9"]
 ```
 
 Travis CI Status
@@ -64,7 +64,9 @@ Example Map Schema:
 
 ;; assuming we've already defined a z-schema and an r-schema
 (def-map-schema bar-schema 
-  [[:a :b :c] pred 
+  [[:type] :bar
+   [:a :b :c] pred 
+   [:a :b :d] [:or -1 0 1 2 3 4]
    [:x :y :z] [pred2 pred3 z-schema] ;; implicit 'and' - all three must pass 
    [:p :q :r] [:or nil? r-schema] ;; an 'or' statement - need just one to pass 
    (optional-path [:z]) (sequence-of string?) 
@@ -138,12 +140,9 @@ data structure under validation:
 #### A checkerboard schema, describing an 8x8 seq of seqs, that contains only 1's and 0's.
 
 ```clj
-(def black-sq #(= 0 %))
-(def white-sq #(= 1 %))
-
 (def-seq-schema checkers-row
   (constraints (fn [row] (= 8 (count row))))
-  [:or white-sq black-sq])
+  [:or 0 1])
 
 (def-seq-schema checkers-board
   (constraints (fn [row] (= 8 (count row))))
@@ -154,10 +153,10 @@ data structure under validation:
 
 ```clj
 (def-seq-schema :layout white-row
-  [white-sq black-sq white-sq black-sq white-sq black-sq white-sq black-sq])
+  [0 1 0 1 0 1 0 1])
 
 (def-seq-schema :layout black-row
-  [black-sq white-sq black-sq white-sq black-sq white-sq black-sq white-sq])
+  [1 0 1 0 1 0 1 0])
 
 (def-seq-schema :layout checkers-board-schema
   [white-row black-row white-row black-row white-row black-row white-row black-row])
