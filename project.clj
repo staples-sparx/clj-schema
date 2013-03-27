@@ -1,4 +1,4 @@
-(defproject org.clojars.runa/clj-schema "0.8.9"
+(defproject org.clojars.runa/clj-schema "0.8.10"
   :min-lein-version "2.0.0"
   :description "Map schema definitions and validation library."
   :url "https://github.com/runa-dev/clj-schema"

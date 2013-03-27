@@ -1,5 +1,6 @@
 (ns clj-schema.validation
   (:require [clojure.set :as set]
+            [clojure.string :as str]
             [clj-schema.schema :as s]
             [clj-schema.internal.utils :as u]))
 
@@ -31,34 +32,42 @@
   (or (:source schema)
       (u/pretty-fn-str f)))
 
+(defn- prefixed [pre-validation-transform-fn original s]
+  (if pre-validation-transform-fn
+    (str "After applying :pre-validation-transform of " pre-validation-transform-fn " to original of " (pr-str original) ", " (apply str (str/lower-case (first s)) (rest s)))
+    s))
+
 (deftype StringErrorReporter []
   ErrorReporter
-  (constraint-error [_ {:keys [parent-path data-under-validation]} constraint]
+  (constraint-error [_ {:keys [parent-path pre-validation-transform]} constraint]
     (if (empty? parent-path)
-      (format "Constraint failed: '%s'"
-              (:source constraint) (pr-str data-under-validation))
+      (format "Constraint failed: '%s'" (:source constraint))
       (format "At parent path %s, constraint failed: '%s'"
-              parent-path (:source constraint) (pr-str data-under-validation))))
+        parent-path (:source constraint))))
 
-  (extraneous-path-error [_ _ xtra-path]
-    (format "Path %s was not specified in the schema." xtra-path))
+  (extraneous-path-error [_ {:keys [pre-validation-transform original]} xtra-path]
+    (prefixed pre-validation-transform original
+              (format "Path %s was not specified in the schema." xtra-path)))
 
-  (missing-path-error [_ _ missing-path]
-    (format "Map did not contain expected path %s." missing-path))
+  (missing-path-error [_ {:keys [pre-validation-transform original]} missing-path]
+    (prefixed pre-validation-transform original
+              (format "Map did not contain expected path %s." missing-path)))
 
-  (predicate-fail-error [_ {:keys [full-path schema]} val-at-path pred]
-    (if (empty? full-path)
-      (format "Value %s did not match predicate '%s'."
-              (pr-str val-at-path) (intelli-print schema pred))
-      (format "Value %s, at path %s, did not match predicate '%s'."
-              (pr-str val-at-path) full-path (intelli-print schema pred))))
+  (predicate-fail-error [_ {:keys [full-path schema pre-validation-transform original]} val-at-path pred]
+    (prefixed pre-validation-transform original
+      (if (empty? full-path)
+        (format "Value %s did not match predicate '%s'."
+                (pr-str val-at-path) (intelli-print schema pred))
+        (format "Value %s, at path %s, did not match predicate '%s'."
+                (pr-str val-at-path) full-path (intelli-print schema pred)))))
 
-  (instance-of-fail-error [_ {:keys [full-path schema]} val-at-path expected-class]
-    (if (empty? full-path)
-      (format "Expected value %s to be an instance of class %s, but was %s"
-        (pr-str val-at-path) (pr-str expected-class) (pr-str (class val-at-path)))
-      (format "Expected value %s, at path %s, to be an instance of class %s, but was %s"
-        (pr-str val-at-path) full-path (pr-str expected-class) (pr-str (class val-at-path)))))
+  (instance-of-fail-error [_ {:keys [full-path schema pre-validation-transform original]} val-at-path expected-class]
+    (prefixed pre-validation-transform original
+      (if (empty? full-path)
+        (format "Expected value %s to be an instance of class %s, but was %s"
+          (pr-str val-at-path) (pr-str expected-class) (pr-str (class val-at-path)))
+        (format "Expected value %s, at path %s, to be an instance of class %s, but was %s"
+          (pr-str val-at-path) full-path (pr-str expected-class) (pr-str (class val-at-path))))))
 
   (pre-validation-transform-error [_ {:keys [full-path schema]} val-at-path pre-validation-transform-fn]
     (if (empty? full-path)
@@ -75,6 +84,8 @@
 (def ^{:private true :dynamic true} *parent-path* nil)
 (def ^{:private true :dynamic true} *all-wildcard-paths* nil)
 (def ^{:private true :dynamic true} *schema-without-wildcard-paths* nil)
+(def ^{:private true :dynamic true} *pre-validation-transform* nil)
+(def ^{:private true :dynamic true} *original* nil)
 
 (defn- state-map-for-reporter [full-path]
   {:data-under-validation *data-under-validation*
@@ -82,7 +93,9 @@
    :parent-path *parent-path*
    :full-path full-path
    :all-wildcard-paths *all-wildcard-paths*
-   :schema-without-wildcard-paths *schema-without-wildcard-paths*})
+   :schema-without-wildcard-paths *schema-without-wildcard-paths*
+   :pre-validation-transform *pre-validation-transform*
+   :original *original*})
 
 (declare validation-errors valid?)
 
@@ -271,6 +284,8 @@
           prepped-x (prepare-for-validation schema x)]
         (binding [*error-reporter* error-reporter
                   *data-under-validation* x
+                  *pre-validation-transform* (or *pre-validation-transform* (:pre-validation-transform schema))
+                  *original* (or *original* (if (:pre-validation-transform schema) x nil))
                   *data-under-validation---post-transformation* prepped-x
                   *schema* schema
                   *parent-path* parent-path]
