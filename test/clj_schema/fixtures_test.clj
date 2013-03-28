@@ -1,27 +1,27 @@
-(ns architect.example-test
-  (:use architect.example
+(ns clj-schema.fixtures-test
+  (:use clj-schema.fixtures
         clojure.test)
-  (:require [architect.blueprint :as blueprint]
-            [architect.simple-blueprints :as ss]))
+  (:require [clj-schema.schema :as schema]
+            [clj-schema.simple-schemas :as ss]))
 
-(blueprint/def-map-blueprint person-blueprint
+(schema/def-map-schema person-schema
   [[:name] ss/NonEmptyString
    [:height] Number])
 
-(def example-1 (example person-blueprint {:name "Roberto"
+(def fixture-1 (fixture person-schema {:name "Roberto"
                                        :height 555}))
 
-(def-example example-2 person-blueprint {:name "Roberto"
+(def-fixture fixture-2 person-schema {:name "Roberto"
                                       :height 555})
 
-(def-example-factory a-factory person-blueprint
+(def-fixture-factory a-factory person-schema
   [& {:keys [name height]
       :or {name "Roberto"
            height 555}}]
   {:name name
    :height height})
 
-(def-example-factory b-factory person-blueprint
+(def-fixture-factory b-factory person-schema
   ([]
     {:name "Roberto"
      :height 555})
@@ -29,12 +29,12 @@
     {:name name
      :height 555}))
 
-(deftest test-example-goodness
-  (testing "You can make examples in a variety of ways"
+(deftest test-fixture-goodness
+  (testing "You can make fixtures in a variety of ways"
     (is (= {:name "Roberto"
             :height 555}
-          example-1
-          example-2
+          fixture-1
+          fixture-2
           (a-factory)
           (b-factory)))
 

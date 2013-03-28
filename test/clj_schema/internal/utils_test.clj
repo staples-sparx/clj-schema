@@ -1,6 +1,6 @@
-(ns architect.internal.utils-test
+(ns clj-schema.internal.utils-test
   (:use clojure.test
-        architect.internal.utils))
+        clj-schema.internal.utils))
 
 
 (deftest test-paths
@@ -42,8 +42,8 @@
   (testing "fully qualified fn names"
     (are [f name] (= (pretty-fn-str f) name)
       nil nil
-      paths "architect.internal.utils/paths" ;; fn names are fully namespace-qualifed
-      foo? "architect.internal.utils-test/foo?"
+      paths "clj-schema.internal.utils/paths" ;; fn names are fully namespace-qualifed
+      foo? "clj-schema.internal.utils-test/foo?"
       integer? "integer?" ;; except clojure.core fns, which aren't
       )))
 
