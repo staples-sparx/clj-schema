@@ -7,7 +7,7 @@
 (def-map-blueprint height-blueprint [[:height] Number])
 (def-map-blueprint count-blueprint [[:count] Number])
 (def-map-blueprint product-blueprint [[:quantity] Number
-                           [:price]    Number])
+                                      [:price]    Number])
 (def-map-blueprint :loose loose-height-blueprint
   [[:height] Number])
 (def-map-blueprint person-blueprint

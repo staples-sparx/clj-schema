@@ -9,10 +9,10 @@
    [:height] Number])
 
 (def example-1 (example person-blueprint {:name "Roberto"
-                                       :height 555}))
+                                          :height 555}))
 
 (def-example example-2 person-blueprint {:name "Roberto"
-                                      :height 555})
+                                         :height 555})
 
 (def-example-factory a-factory person-blueprint
   [& {:keys [name height]
@@ -23,28 +23,28 @@
 
 (def-example-factory b-factory person-blueprint
   ([]
-    {:name "Roberto"
-     :height 555})
+     {:name "Roberto"
+      :height 555})
   ([name]
-    {:name name
-     :height 555}))
+     {:name name
+      :height 555}))
 
 (deftest test-example-goodness
   (testing "You can make examples in a variety of ways"
     (is (= {:name "Roberto"
             :height 555}
-          example-1
-          example-2
-          (a-factory)
-          (b-factory)))
+           example-1
+           example-2
+           (a-factory)
+           (b-factory)))
 
     (is (= {:name "Foo"
             :height 111}
-          (a-factory :name "Foo" :height 111)))
+           (a-factory :name "Foo" :height 111)))
 
     (is (= {:name "Bar"
             :height 555}
-          (b-factory "Bar"))))
+           (b-factory "Bar"))))
 
   (testing "return values that don't pass validation throw AssertionErrors"
     (is (thrown? AssertionError (a-factory :name 555 :height "Bob")))
