@@ -166,7 +166,7 @@ data structure under validation:
 ```clj
 (def-set-schema possible-states
   (constraints #(> 50 (count %)))
-  #(re-matches #"state\d+" %)) 
+  #"^state\d+$") 
 ```
 
 
