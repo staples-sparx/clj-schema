@@ -1,7 +1,7 @@
-(defproject org.clojars.alexbaranosky/architect "1.0.0"
+(defproject org.clojars.runa/architect "1.0.0-SNAPSHOT"
   :min-lein-version "2.0.0"
   :description "Blueprints for validating Clojure data, and making valid example data"
-  :url "https://github.com/AlexBaranosky/architect"
+  :url "https://github.com/runa-dev/architect"
   :license {:name "MIT License"
             :url "http://mit-license.org/"}
   :profiles {:user {:dependencies [[org.clojure/clojure "1.5.1"]]}

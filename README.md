@@ -7,7 +7,7 @@ To Use
 ======
 
 ```clj
-[org.clojars.alexbaranosky/architect "1.0.0"]
+[org.clojars.runa/architect "1.0.0"] ;; Not released just yet
 ```
 
 Blueprints
