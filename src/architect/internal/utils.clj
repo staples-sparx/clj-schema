@@ -1,4 +1,4 @@
-(ns clj-schema.internal.utils
+(ns architect.internal.utils
   (:require [clojure.set :as set]
             [clojure.string :as str]))
 
@@ -13,7 +13,7 @@
                coll))
 
 
-;;; for schema.clj
+;;; for blueprint.clj
 
 (defn paths
   "Return the paths of the leaves in the map"
@@ -51,7 +51,7 @@
         (str/replace #"_QMARK" "?")
         (str/replace #"_" "-"))))
 
-;;; For simple_schemas.clj
+;;; For simple_blueprints.clj
 
 (defn parse-long [s]
   (Long/parseLong s))

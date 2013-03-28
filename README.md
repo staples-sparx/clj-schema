@@ -1,83 +1,75 @@
+Blueprints for Clojure Data
+===========================
+
+*   [Getting Started](https://github.com/runa-dev/clj-blueprint/wiki/Getting-Started)
+
 To Use
 ======
 
 ```clj
-[org.clojars.runa/clj-schema "0.8.10"]
+[org.clojars.alexbaranosky/architect "1.0.0"]
 ```
 
-Travis CI Status
-================
+Blueprints
+==========
 
-[![Build Status](https://travis-ci.org/runa-dev/clj-schema.png)](https://travis-ci.org/runa-dev/clj-schema)
-
-Schemas for Clojure Data Structures and Values
-==============================================
-
-*   [Getting Started](https://github.com/runa-dev/clj-schema/wiki/Getting-Started)
-*   [API Docs](http://runa-dev.github.com/clj-schema/)
-*   [Google Group](https://groups.google.com/forum/?fromgroups#!forum/clj-schema)
-
-
-Schemas
-=======
-
-There are three main types of schemas: `def-map-schema`, `def-seq-schema`, `def-set-schema`.  These 
-three all come with the built-in assumption that the target of the schema matches 
+There are three main types of blueprints: `def-map-blueprint`, `def-seq-blueprint`, `def-set-blueprint`.  These 
+three all come with the built-in assumption that the target of the blueprint matches 
 the expected type, or is nil.
 
-There is also a category of schemas that can be applied to any type. We call these
-simple-schemas.
+There is also a category of blueprints that can be applied to any type. We call these
+simple-blueprints.
 
-If you don't create a simple-schema explicitly then in most cases 
-clj-schema will implicitly create one for you:
+If you don't create a simple-blueprint explicitly then in most cases 
+clj-blueprint will implicitly create one for you:
 
-`(validation-errors String "A")` is equivalent to `(validation-errors (simple-schema String) "A")`
-`(validation-errors number? 99)` is equivalent to `(validation-errors (simple-schema number?) 99)`
-`(validation-errors [number? pos?] 77)` is equivalent to `(validation-errors (simple-schema [number? pos?]) 77)`
+`(validation-errors String "A")` is equivalent to `(validation-errors (simple-blueprint String) "A")`
+`(validation-errors number? 99)` is equivalent to `(validation-errors (simple-blueprint number?) 99)`
+`(validation-errors [number? pos?] 77)` is equivalent to `(validation-errors (simple-blueprint [number? pos?]) 77)`
 `(validation-errors [:or String Keyword] :a)` is... 
-  equivalent to `(validation-errors (simple-schema [:or String Keyword]) :a)`
+  equivalent to `(validation-errors (simple-blueprint [:or String Keyword]) :a)`
 
 
-Map Schemas
-===========
+Map Blueprints
+==============
 
-Map schemas are defined with any number of paths through a nested map, paired
-with another schema to check it.  The schemas to check it, can be any of:
-map-schema, seq-schema, set-schema, simple-schemas, or something that can 
-be converted to a simple-schema on the fly.
+Map blueprints are defined with any number of paths through a nested map, paired
+with another blueprint to check it.  The blueprints to check it, can be any of:
+map-blueprint, seq-blueprint, set-blueprint, simple-blueprints, or something that can 
+be converted to a simple-blueprint on the fly.
 
-Any schema may be wrapped in `sequence-of` to indicate the value should
+Any blueprint may be wrapped in `sequence-of` to indicate the value should
 be sequential, or wrapped in `set-of` to indicate the value is a set.  These
-are aliases for `seq-schema` and `set-schema`
+are aliases for `seq-blueprint` and `set-blueprint`
 
 A path may be marked as an `optional-path`. This means that is doesn't
-have to be present, but if it is, it must match the given schema.
+have to be present, but if it is, it must match the given blueprint.
 
 Wildcard paths are paths where one or more peices are defined as anything
-matching a given schema.
+matching a given blueprint.
 
-Example Map Schema:
+Example Map blueprint:
 
 ```clj
-(:require [clj-schema.schema :refer [def-map-schema optional-path sequence-of 
-                                     map-schema set-of]])
+(:require [clj-blueprint.blueprint :refer [def-map-blueprint optional-path sequence-of 
+                                     map-blueprint set-of]])
 
-;; assuming we've already defined a z-schema and an r-schema
-(def-map-schema bar-schema 
+;; assuming we've already defined a z-blueprint and an r-blueprint
+(def-map-blueprint bar-blueprint 
   [[:type] :bar
    [:a :b :c] pred 
    [:a :b :d] [:or -1 0 1 2 3 4]
-   [:x :y :z] [pred2 pred3 z-schema] ;; implicit 'and' - all three must pass 
-   [:p :q :r] [:or nil? r-schema] ;; an 'or' statement - need just one to pass 
+   [:x :y :z] [pred2 pred3 z-blueprint] ;; implicit 'and' - all three must pass 
+   [:p :q :r] [:or nil? r-blueprint] ;; an 'or' statement - need just one to pass 
    (optional-path [:z]) (sequence-of string?) 
-   [:a b :d] (map-schema :loose [[:cat :name] String]) ;; can use Java Class objects directly 
+   [:a b :d] (map-blueprint :loose [[:cat :name] String]) ;; can use Java Class objects directly 
    [:cat :colors] (set-of String)])]
    ```
 
-Example map schema w/ wildcard paths:
+Example map blueprint w/ wildcard paths:
 
 ```clj
-(def-map-schema foo-schema 
+(def-map-blueprint foo-blueprint 
   [[:a (wild String) (wild Number)] String])
 
 ;; matches maps such as: 
@@ -93,91 +85,91 @@ Example map schema w/ wildcard paths:
 {:a {}}
 ```
 
-You can combine more than one map schema into a combined schema, that will simply check all
-paths (and constraints) from all included schemas. 
+You can combine more than one map blueprint into a combined blueprint, that will simply check all
+paths (and constraints) from all included blueprints. 
 
 ```clj
-(def-map-schema bar-schema
-  foo-schema
+(def-map-blueprint bar-blueprint
+  foo-blueprint
   [[:bar] String
    [:baz] #"baz"])
 ```
 
-All schemas are just maps:
+All blueprints are just maps:
 
 ```clj
-(def-map-schema foo-schema [[:a] String])
-;; foo-schema
+(def-map-blueprint foo-blueprint [[:a] String])
+;; foo-blueprint
 ;; => {:type :map 
-;;     :schema-spec [[:a] {:type :class, :schema-spec java.lang.String, :constraints []}]
+;;     :blueprint-spec [[:a] {:type :class, :blueprint-spec java.lang.String, :constraints []}]
 ;;     :constraints [{:source [:or nil? map?]
 ;;                    :type :or-statement
-;;                    :schema-spec [#<core$nil_QMARK_ clojure.core$nil_QMARK_@340ae1cf> 
+;;                    :blueprint-spec [#<core$nil_QMARK_ clojure.core$nil_QMARK_@340ae1cf> 
 ;;                                  #<core$map_QMARK_ clojure.core$map_QMARK_@366ef7ba>] 
 ;;                    :constraints []}]
 ;;     :strict true}
 ```
 
-`def-map-schema` creates a strict schema by default, which expects only the paths it describes to be present on the given map.
+`def-map-blueprint` creates a strict blueprint by default, which expects only the paths it describes to be present on the given map.
 
-`(def-map-schema :loose my-schema [[:a] String])` creates a loose schema, which expects its paths to be
+`(def-map-blueprint :loose my-blueprint [[:a] String])` creates a loose blueprint, which expects its paths to be
 present but does not complain about extra paths.
 
 
 Seq/Set Validation and Introducing Constraints
 ==================================================
 
-You can also add constraints: schemas, or simple schema precursors that apply to the entire
+You can also add constraints: blueprints, or simple blueprint precursors that apply to the entire
 data structure under validation:
 
 ```clj
-(def-map-schema :loose sorted-unique
+(def-map-blueprint :loose sorted-unique
   (constraints sorted? (fn [m] (= (count (keys m))
                                   (count (distinct (keys m))))))
   [[:id] String])
 ```
 
-#### A checkerboard schema, describing an 8x8 seq of seqs, that contains only 1's and 0's.
+#### A checkerboard blueprint, describing an 8x8 seq of seqs, that contains only 1's and 0's.
 
 ```clj
-(def-seq-schema checkers-row
+(def-seq-blueprint checkers-row
   (constraints (fn [row] (= 8 (count row))))
   [:or 0 1])
 
-(def-seq-schema checkers-board
+(def-seq-blueprint checkers-board
   (constraints (fn [row] (= 8 (count row))))
-  checkers-row-schema)
+  checkers-row-blueprint)
 ```        
 
-#### An alternate, layout-based checkerboard schema, ensures checkering of 1's and 0's:
+#### An alternate, layout-based checkerboard blueprint, ensures checkering of 1's and 0's:
 
 ```clj
-(def-seq-schema :layout white-row
+(def-seq-blueprint :layout white-row
   [0 1 0 1 0 1 0 1])
 
-(def-seq-schema :layout black-row
+(def-seq-blueprint :layout black-row
   [1 0 1 0 1 0 1 0])
 
-(def-seq-schema :layout checkers-board-schema
+(def-seq-blueprint :layout checkers-board-blueprint
   [white-row black-row white-row black-row white-row black-row white-row black-row])
 ```
 
-#### Sets schemas:
+#### Set blueprints:
 ```clj
-(def-set-schema possible-states
+(def-set-blueprint possible-states
   (constraints #(> 50 (count %)))
   #(re-matches #"state\d+" %)) 
 ```
 
 
-Map Validation Using Schemas
+Map Validation Using Blueprints
 ============================
  
-`validation-errors` can be used to test a map vs a given schema. It can 
+`validation-errors` can be used to test a map vs a given blueprint. It can 
 find a variety of issues:
 
 *   thing we're validating wasn't a map
-*   map contained a path not specified in the schema (only for strict schemas)
+*   map contained a path not specified in the blueprint (only for strict blueprints)
 *   map was missing a specified path
 *   a path's value was single, but was specified as sequential
 *   a path's value was single, but was specified as a set
@@ -187,16 +179,16 @@ find a variety of issues:
 *   a path's value's Class wasn't an instance of the specified Class
 
 ```clj
-(def-map-schema person-schema
+(def-map-blueprint person-blueprint
   [[:name :first] String
    [:name :last]  String
    [:height]      Double])
 ```
 
 ```clj
-(:require [clj-schema.validation :refer [validation-errors])
+(:require [clj-blueprint.validation :refer [validation-errors])
 
-(validation-errors person-schema {})
+(validation-errors person-blueprint {})
 ;; => #{"Map did not contain expected path [:name :first]." 
 ;;      "Map did not contain expected path [:name :last]."
 ;;      "Map did not contain expected path [:height]."}
@@ -206,7 +198,7 @@ Supports alternate report formats. You just have to implement the ErrorReporter
 protocol, and then pass it in like this:
 
 ```clj
-(:require [clj-schema.validation :refer [ErrorReporter validation-errors]])
+(:require [clj-blueprint.validation :refer [ErrorReporter validation-errors]])
 
 ;; An example of a data-based error format, instead of using the default StringErrorReporter.
 
@@ -216,7 +208,7 @@ protocol, and then pass it in like this:
   ;; The second arg to each of the protocol's methods is a map of various state 
   ;; of the validation at the time the error was generated. Your protocol 
   ;; implementations can access any of that information for your reporting purposes.
-  ;; For reference see `clj-schema.validation/state-map-for-reporter` which creates that map.
+  ;; For reference see `clj-blueprint.validation/state-map-for-reporter` which creates that map.
   (constraint-error [_ {} constraint]
     {:type :constraint-error
      :data data-under-validation
@@ -247,8 +239,8 @@ protocol, and then pass it in like this:
      :values-class (class val-at-path)
      :expected-class expected-class}))
 
-(validation-errors CljDataErrorReporter person-schema {:map "you" 
-                                                       :are "validating"})
+(validation-errors CljDataErrorReporter person-blueprint {:map "you" 
+                                                          :are "validating"})
 ```
 
 
@@ -258,27 +250,27 @@ Test Data and Test Data Factories
 Rationale: to keep your test data from growing out of sync with your real data,
 and to make factories for concisely creating valid fake data for tests.
 
-You can find this code in the clj-schema.fixtures namespace.
+You can find this code in the clj-blueprint.examples namespace.
 
 These should probably be renamed to something less confusing. Any ideas?
 
 ```clj
-(:require [clj-schema.fixtures :refer [def-fixture def-fixture-factory])
+(:require [clj-blueprint.examples :refer [def-example def-example-factory])
 
-(def-map-schema person-schema
+(def-map-blueprint person-blueprint
   [[:name :first] String
    [:name :last]  String
    [:height]      Double])
 
 ;; This will blow up at load time if the 'alex' map you want to use in your test
 ;; turns out to not be valid
-(def-fixture alex person-schema
+(def-example alex person-blueprint
   {:name {:first "Alex"
           :last "Baranosky"}
    :height 71})
 
 ;; Let's define a factory that makes people. And then...
-(def-fixture-factory person person-schema
+(def-example-factory person person-blueprint
   [& {:keys [first-name last-name height]
       :or {first-name "Alex"
            last-name "Baranosky"
@@ -292,13 +284,13 @@ These should probably be renamed to something less confusing. Any ideas?
   (is (= [(person :height 67) (person :height 89) (person :height 98)]
          (sort-people-by-height [(person :height 98) (person :height 67) (person :height 89)]))))
 
-;; Fixture factories can also be defined as multi-arity
-(def-seq-schema :layout point-schema
+;; example factories can also be defined as multi-arity
+(def-seq-blueprint :layout point-blueprint
   (constraints (fn [[x y]] 
                  (= (class x) (class y))))
   [Number Number])
 
-(def-fixture-factory point point-schema
+(def-example-factory point point-blueprint
   ([x y] 
     [x y])
   ([length]
@@ -310,27 +302,22 @@ Validated Compojure Routes
 ==========================
 
 Greg Spurrier beat me to it and created a nice library for creating validated 
-routes, called [checked-route](https://github.com/gregspurrier/checked-route). It is a natural match to clj-schema, and I 
+routes, called [checked-route](https://github.com/gregspurrier/checked-route). It is a natural match to clj-blueprint, and I 
 recommend you check it out.
 
 ```clj
 ;; Example:
 (:require [checked-route.route :as checked]
-          [clj-schema.schema :as sch]
-          [clj-schema.simple-schemas :as ss]
-          [clj-schema.validation :as val])
+          [clj-blueprint.blueprint :refer [def-map-blueprint]]
+          [clj-blueprint.simple-blueprints :as ss]
+          [clj-blueprint.validation :as val])
           
-(def-map-schema user-params-schema
+(def-map-blueprint user-params-blueprint
   [[:name] ss/NonEmptyString])
 
-(checked/POST "/user" {^{:check #(val/validation-errors user-params-schema %)} params :params}
+(checked/POST "/user" {^{:check #(val/validation-errors user-params-blueprint %)} params :params}
   (do-something params))
 ```
-
-Developer Tests
-===============
-
-Run them with `./run-tests.sh`.  This will run all unit tests in Clojure 1.2 - 1.5, ensuring this library is usable by the widest number of projects.
 
 Contributors
 ============

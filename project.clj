@@ -1,9 +1,7 @@
-(defproject org.clojars.runa/clj-schema "0.8.10"
+(defproject org.clojars.alexbaranosky/architect "1.0.0"
   :min-lein-version "2.0.0"
-  :description "Map schema definitions and validation library."
-  :url "https://github.com/runa-dev/clj-schema"
-  :mailing-list {:name "Clj-schema Google Group"
-                 :subscribe "https://groups.google.com/forum/?fromgroups#!forum/clj-schema"}
+  :description "Blueprints for validating Clojure data, and making valid example data"
+  :url "https://github.com/AlexBaranosky/architect"
   :license {:name "MIT License"
             :url "http://mit-license.org/"}
   :profiles {:user {:dependencies [[org.clojure/clojure "1.5.1"]]}
@@ -17,7 +15,4 @@
              :1.4.0 {:dependencies [[org.clojure/clojure "1.4.0"]]}
              :1.5.0 {:dependencies [[org.clojure/clojure "1.5.0-RC4"]]}}
   :aliases {"run-tests" ["with-profile" "1.3.0:1.4.0:1.5.0" "test"]
-            "slamhound" ["run" "-m" "slam.hound"]}
-  :codox {:src-dir-uri "https://github.com/runa-dev/clj-schema/blob/master"
-          :src-linenum-anchor-prefix "L"
-          :exclude [clj-schema.internal.utils]})
+            "slamhound" ["run" "-m" "slam.hound"]})
