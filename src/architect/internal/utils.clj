@@ -32,7 +32,7 @@
   "true if 'path' is a child of 'root-path'"
   [root-path path]
   (= root-path
-     (take (count root-path) path)))
+    (take (count root-path) path)))
 
 (defn fn->fn-thats-false-if-throws
   "Takes a fn.  Returns a new fn that evaluates
@@ -119,19 +119,19 @@
   (let [as-symbol (gensym 'symbol-for-destructured-arg)
         snd-to-last-is-as? #(= :as (second (reverse %)))]
     (cond (and (vector? arg-form) (snd-to-last-is-as? arg-form))
-          [arg-form (last arg-form)]
+      [arg-form (last arg-form)]
 
-          (vector? arg-form)
-          [(-> arg-form (conj :as) (conj as-symbol)) as-symbol]
+      (vector? arg-form)
+      [(-> arg-form (conj :as) (conj as-symbol)) as-symbol]
 
-          (and (map? arg-form) (contains? arg-form :as))
-          [arg-form (:as arg-form)]
+      (and (map? arg-form) (contains? arg-form :as))
+      [arg-form (:as arg-form)]
 
-          (map? arg-form)
-          [(assoc arg-form :as as-symbol) as-symbol]
+      (map? arg-form)
+      [(assoc arg-form :as as-symbol) as-symbol]
 
-          :else
-          [arg-form arg-form])))
+      :else
+      [arg-form arg-form])))
 
 (defmacro defn-kw
   "A form of defn where the last arg is assumed to be keywords args, i.e.
@@ -141,22 +141,22 @@
    were not listed in the key destructuring."
   [name arg-vec & body]
   (let [valid-key-set (if (map? (last arg-vec))
-                        (set (map keyword (:keys (last arg-vec))))
-                        #{})
+    (set (map keyword (:keys (last arg-vec))))
+      #{})
         num-args (count arg-vec)
         [kw-destructuring kw-arg-map] (single-destructuring-arg->form+name (last arg-vec))
         new-arg-vec (vec (concat (drop-last 2 arg-vec) ['& kw-destructuring]))]
     (assert (map? (last arg-vec))
-            "defn-kw expects the final element of the arg list to be a map destructuring.")
+      "defn-kw expects the final element of the arg list to be a map destructuring.")
     (assert (contains? (last arg-vec) :keys)
-            "defn-kw expects the map destructuring to have a :keys key.")
+      "defn-kw expects the map destructuring to have a :keys key.")
     (assert (= '& (last (butlast arg-vec)))
-            "defn-kw expects the second to last element of the arg list to be an '&")
+      "defn-kw expects the second to last element of the arg list to be an '&")
     `(defn ~name ~new-arg-vec
        (let [actual-key-set# (set (keys ~kw-arg-map))
              extra-keys# (set/difference actual-key-set# ~valid-key-set)]
          (when-not (empty? ~kw-arg-map)
            (assert (empty? extra-keys#)
-                   (str "Was passed these keyword args " extra-keys#
-                        " which were not listed in the arg list " '~arg-vec)))
+             (str "Was passed these keyword args " extra-keys#
+               " which were not listed in the arg list " '~arg-vec)))
          ~@body))))

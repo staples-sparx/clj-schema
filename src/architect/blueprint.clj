@@ -117,8 +117,8 @@ map under-validation to have more keys than are specified in the blueprint."
         (or (fn? x)
             (map? x)
             (set? x)) (predicate-blueprint x)
-            :else (predicate-blueprint (partial = x)
-                                       (list 'fn '[x] (list '= x 'x)))))
+        :else (predicate-blueprint (partial = x)
+                                (list 'fn '[x] (list '= x 'x)))))
 
 (defn ensure-blueprint
   "Takes any x.  If it is already a blueprint, returns it, otherwise attempts to
@@ -129,8 +129,8 @@ map under-validation to have more keys than are specified in the blueprint."
 (defmacro def-simple-blueprint
   "Creates a named var for a simple-blueprint.  See `simple-blueprint` for more details."
   [name x]
-  `(def ~(vary-meta name assoc ::blueprint true)
-     (simple-blueprint ~x)))
+   `(def ~(vary-meta name assoc ::blueprint true)
+      (simple-blueprint ~x)))
 
 ;;;; Blueprints for Specific Data Structures
 
@@ -178,11 +178,11 @@ map under-validation to have more keys than are specified in the blueprint."
   "Creates a named var for a map-blueprint, defaults to being strict.  Can also be
    made loose by passing in :loose as the first parameter.  See `map-blueprint` for more details."
   {:arglists '([name & constraints-and-blueprint-vectors]
-                 [looseness name & constraints-and-blueprint-vectors])}
+               [looseness name & constraints-and-blueprint-vectors])}
   [& args]
   (let [[looseness name & constraints-and-blueprint-vectors] (if (keyword? (first args))
-                                                               args
-                                                               (cons :strict args))]
+                                                            args
+                                                            (cons :strict args))]
     (assert (contains? #{:strict :loose} looseness))
     `(def ~(vary-meta name assoc ::blueprint true ::strict (= :strict looseness))
        (map-blueprint ~looseness ~@constraints-and-blueprint-vectors))))
@@ -213,11 +213,11 @@ map under-validation to have more keys than are specified in the blueprint."
 (defmacro def-seq-blueprint
   "Creates a named var for a seq-blueprint. See `seq-blueprint` for more details."
   {:arglists '([name & constraints-and-blueprint-specs]
-                 [all-or-layout name & constraints-and-blueprint-specs])}
+               [all-or-layout name & constraints-and-blueprint-specs])}
   [& args]
   (let [[all-or-layout name & constraints-and-blueprint-specs] (if (keyword? (first args))
-                                                                 args
-                                                                 (cons :all args))]
+                                                            args
+                                                            (cons :all args))]
     (assert (contains? #{:all :layout} all-or-layout))
     `(def ~(vary-meta name assoc ::blueprint true)
        (seq-blueprint ~all-or-layout ~@constraints-and-blueprint-specs))))
@@ -310,30 +310,30 @@ map under-validation to have more keys than are specified in the blueprint."
    Takes a pred like (fn [[path blueprint]] ...) and selects all blueprint rows that match."
   [pred blueprint]
   (assoc blueprint :blueprint-spec (->> (blueprint-rows blueprint)
-                                        (filter pred)
-                                        (apply concat)
-                                        vec)))
+                                  (filter pred)
+                                  (apply concat)
+                                  vec)))
 
 (defn subtract-paths
   "Only makes sense to call on a map-blueprint.
    Returns a new blueprint minus some paths."
   [blueprint & paths]
   (filter-blueprint (fn [[path _]] (not (contains? (set paths) path)))
-                    blueprint))
+                     blueprint))
 
 (defn select-blueprint-keys
   "Only makes sense to call on a map-blueprint.
    Returns a new blueprint with only the paths starting with the specified keys."
   [blueprint & ks]
   (filter-blueprint (fn [[path _]] (contains? (set ks) (first path)))
-                    blueprint))
+                      blueprint))
 
 (defn subtract-wildcard-paths
   "Only makes sense to call on a map-blueprint..
    Returns a blueprint that is the same in all respects, except it has none of the wildcard paths."
   [blueprint]
   (filter-blueprint (fn [[path _]] (not (wildcard-path? path)))
-                    blueprint))
+                      blueprint))
 
 
 ;;;; Namespace Info

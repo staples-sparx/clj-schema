@@ -35,10 +35,10 @@ exception, else returns the map untouched"
                  `(~args
                    (example ~blueprint (do ~@body-that-creates-example)))))
 
-          kw-args?
-          (let [[args & body-that-creates-example] lists-of-args+bodies]
-            `(u/defn-kw ~name ~args
-               (example ~blueprint (do ~@body-that-creates-example))))
+           kw-args?
+           (let [[args & body-that-creates-example] lists-of-args+bodies]
+             `(u/defn-kw ~name ~args
+                (example ~blueprint (do ~@body-that-creates-example))))
 
           :else
           `(def-example-factory ~name ~blueprint ~lists-of-args+bodies)))) ;; turns single-arity into multi-arity

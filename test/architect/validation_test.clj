@@ -375,7 +375,7 @@
 
        ;; ... <continued>
        [[:a :b] (map-blueprint :strict [[:banana-count] Number
-                                        [(wild String)] Number])]
+                                [(wild String)] Number])]
        {:a {}}
        #{"Map did not contain expected path [:a :b]."}
 
@@ -416,75 +416,75 @@
 
 (deftest test-blueprints-can-check-constraints-against-entire-map
   (let [errors (validation-errors blueprint-with-constraints {:a "string"
-                                                              :b 99
-                                                              :extra 47})]
+                                                           :b 99
+                                                           :extra 47})]
     (is (= #{"Constraint failed: '(fn [m] (even? (count (keys m))))'" "Constraint failed: '(comp even? count distinct vals)'"}
-           errors)))
+          errors)))
 
   (is (= #{} (validation-errors blueprint-with-constraints {:a "string"
-                                                            :b 99}))))
+                                                         :b 99}))))
 
-(deftest test-loose-blueprint-validations
-  (are [blueprint m errors] (= errors (validation-errors (map-blueprint :loose blueprint) m))
+       (deftest test-loose-blueprint-validations
+         (are [blueprint m errors] (= errors (validation-errors (map-blueprint :loose blueprint) m))
 
-       ;; extra paths on wild card paths are ok if the blueprint is loose
-       [[:a (wild string?)] String]
-       {:a {999 :boom}}
-       #{}
-       ))
+           ;; extra paths on wild card paths are ok if the blueprint is loose
+           [[:a (wild string?)] String]
+           {:a {999 :boom}}
+             #{}
+           ))
 
-(deftest test-valid?
-  (testing "valid iff there'd be no error messages"
-    (are [blueprint m result] (= (valid? (map-blueprint :strict blueprint) m) result)
+       (deftest test-valid?
+      (testing "valid iff there'd be no error messages"
+        (are [blueprint m result] (= (valid? (map-blueprint :strict blueprint) m) result)
 
-         [[:a] number?]
-         {:a 1}
-         true
+          [[:a] number?]
+          {:a 1}
+          true
 
-         [[:b] number?]
+          [[:b] number?]
+          {}
+          false)))
+
+     ;; TODO ALex July 30, 2012 -- move into internal ns all about wildcard paths
+     (deftest test-wildcard-path->concrete-paths
+       (are [m wildcard-path concrete-paths] (= (set concrete-paths)
+                                               (set (#'architect.validation/wildcard-path->concrete-paths m
+                                                      wildcard-path)))
+         ;; base cases
          {}
-         false)))
+         []
+         [[]]
 
-;; TODO ALex July 30, 2012 -- move into internal ns all about wildcard paths
-(deftest test-wildcard-path->concrete-paths
-  (are [m wildcard-path concrete-paths] (= (set concrete-paths)
-                                           (set (#'architect.validation/wildcard-path->concrete-paths m
-                                                                                                      wildcard-path)))
-       ;; base cases
-       {}
-       []
-       [[]]
+         {:a 1}
+         [:a]
+         [[:a]]
 
-       {:a 1}
-       [:a]
-       [[:a]]
+         ;; expands concrete path into itself
+         {:a {:any-keyword {:c {:any-keyword 'SOMETHING}}}}
+         [:a :any-keyword :c :any-keyword]
+         [[:a :any-keyword :c :any-keyword]]
 
-       ;; expands concrete path into itself
-       {:a {:any-keyword {:c {:any-keyword 'SOMETHING}}}}
-       [:a :any-keyword :c :any-keyword]
-       [[:a :any-keyword :c :any-keyword]]
+         ;; shortest wildcard works -- important test don't remove
+         {:a 1}
+         [(wild keyword?)]
+         [[:a]]
 
-       ;; shortest wildcard works -- important test don't remove
-       {:a 1}
-       [(wild keyword?)]
-       [[:a]]
+         ;; expands wildcard path into all possible paths based on the supplied map 'm'
+         {:a {:b {:c "foo"}
+              :x {:c "bar"}}}
+         [:a (wild keyword?) :c]
+         [[:a :b :c]
+          [:a :x :c]]
 
-       ;; expands wildcard path into all possible paths based on the supplied map 'm'
-       {:a {:b {:c "foo"}
-            :x {:c "bar"}}}
-       [:a (wild keyword?) :c]
-       [[:a :b :c]
-        [:a :x :c]]
+         ;; if a map doesn't have enough nesting to satisfy a wildcard path, then
+         ;; there are no concrete paths generated
+         {:a 1}
+         [:a (wild :b)]
+         []
 
-       ;; if a map doesn't have enough nesting to satisfy a wildcard path, then
-       ;; there are no concrete paths generated
-       {:a 1}
-       [:a (wild :b)]
-       []
+         ))
 
-       ))
-
-;; same here
+     ;; same here
 (deftest test-covered-by-wildcard-path?
   (are [path wildcard-path covered?] (= covered? (#'architect.validation/covered-by-wildcard-path? path wildcard-path))
 
@@ -567,7 +567,7 @@
          (validation-errors [:or String Number] 55)))
   (is (= #{"Expected value :keyword to be an instance of class java.lang.Number, but was clojure.lang.Keyword" "Expected value :keyword to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
          (validation-errors [:or String Number] :keyword)))
-  (is (= #{"Expected value :keyword to be an instance of class java.lang.Number, but was clojure.lang.Keyword" "Expected value :keyword to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
+    (is (= #{"Expected value :keyword to be an instance of class java.lang.Number, but was clojure.lang.Keyword" "Expected value :keyword to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
          (validation-errors [:or Number String] :keyword)))
 
   (is (= #{}
@@ -607,32 +607,32 @@
 (deftest test-seq-layouts
   (is (= #{}
          (validation-errors checkers-board-blueprint [[1 0 1 0 1 0 1 0]
-                                                      [0 1 0 1 0 1 0 1]
-                                                      [1 0 1 0 1 0 1 0]
-                                                      [0 1 0 1 0 1 0 1]
-                                                      [1 0 1 0 1 0 1 0]
-                                                      [0 1 0 1 0 1 0 1]
-                                                      [1 0 1 0 1 0 1 0]
-                                                      [0 1 0 1 0 1 0 1]])))
+                                                   [0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]])))
 
   (is (= #{"Constraint failed: '(fn [xs] (= (count seq-layout) (count xs)))'"}
          (validation-errors checkers-board-blueprint [[0 1 0 1 0 1 0 1]
-                                                      [1 0 1 0 1 0 1 0]
-                                                      [0 1 0 1 0 1 0 1]
-                                                      [1 0 1 0 1 0 1 0]
-                                                      [0 1 0 1 0 1 0 1]
-                                                      [1 0 1 0 1 0 1 0]
-                                                      [0 1 0 1 0 1 0 1]])))
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]])))
 
   (is (= #{"Value 77777, at path [3 5], did not match predicate '#{1}'."}
          (validation-errors checkers-board-blueprint [[1 0 1 0 1 0 1 0]
-                                                      [0 1 0 1 0 1 0 1]
-                                                      [1 0 1 0 1 0 1 0]
-                                                      [0 1 0 1 0 77777 0 1]
-                                                      [1 0 1 0 1 0 1 0]
-                                                      [0 1 0 1 0 1 0 1]
-                                                      [1 0 1 0 1 0 1 0]
-                                                      [0 1 0 1 0 1 0 1]]))))
+                                                   [0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 77777 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]
+                                                   [1 0 1 0 1 0 1 0]
+                                                   [0 1 0 1 0 1 0 1]]))))
 
 (deftest edge-cases-in-blueprint-construction
   (is (= #{}

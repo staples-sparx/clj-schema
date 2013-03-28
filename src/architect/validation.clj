@@ -43,7 +43,7 @@
     (if (empty? parent-path)
       (format "Constraint failed: '%s'" (:source constraint))
       (format "At parent path %s, constraint failed: '%s'"
-              parent-path (:source constraint))))
+        parent-path (:source constraint))))
 
   (extraneous-path-error [_ {:keys [pre-validation-transform original]} xtra-path]
     (prefixed pre-validation-transform original
@@ -55,26 +55,26 @@
 
   (predicate-fail-error [_ {:keys [full-path blueprint pre-validation-transform original]} val-at-path pred]
     (prefixed pre-validation-transform original
-              (if (empty? full-path)
-                (format "Value %s did not match predicate '%s'."
-                        (pr-str val-at-path) (intelli-print blueprint pred))
-                (format "Value %s, at path %s, did not match predicate '%s'."
-                        (pr-str val-at-path) full-path (intelli-print blueprint pred)))))
+      (if (empty? full-path)
+        (format "Value %s did not match predicate '%s'."
+                (pr-str val-at-path) (intelli-print blueprint pred))
+        (format "Value %s, at path %s, did not match predicate '%s'."
+                (pr-str val-at-path) full-path (intelli-print blueprint pred)))))
 
   (instance-of-fail-error [_ {:keys [full-path blueprint pre-validation-transform original]} val-at-path expected-class]
     (prefixed pre-validation-transform original
-              (if (empty? full-path)
-                (format "Expected value %s to be an instance of class %s, but was %s"
-                        (pr-str val-at-path) (pr-str expected-class) (pr-str (class val-at-path)))
-                (format "Expected value %s, at path %s, to be an instance of class %s, but was %s"
-                        (pr-str val-at-path) full-path (pr-str expected-class) (pr-str (class val-at-path))))))
+      (if (empty? full-path)
+        (format "Expected value %s to be an instance of class %s, but was %s"
+          (pr-str val-at-path) (pr-str expected-class) (pr-str (class val-at-path)))
+        (format "Expected value %s, at path %s, to be an instance of class %s, but was %s"
+          (pr-str val-at-path) full-path (pr-str expected-class) (pr-str (class val-at-path))))))
 
   (pre-validation-transform-error [_ {:keys [full-path blueprint]} val-at-path pre-validation-transform-fn]
     (if (empty? full-path)
       (format "Value %s could not be transformed before validation using '%s'."
-              (pr-str val-at-path) pre-validation-transform-fn)
+        (pr-str val-at-path) pre-validation-transform-fn)
       (format "Value %s, at path %s, could not be transformed before validation using '%s'."
-              (pr-str val-at-path) full-path pre-validation-transform-fn))))
+        (pr-str val-at-path) full-path pre-validation-transform-fn))))
 
 ;; used to hold state of one `validation-errors` calculation
 (def ^{:private true :dynamic true} *error-reporter* nil)
@@ -280,20 +280,20 @@
   ([error-reporter blueprint x]
      (validation-errors error-reporter [] blueprint x))
   ([error-reporter parent-path blueprint x]
-     (let [blueprint (s/ensure-blueprint blueprint)
-           prepped-x (prepare-for-validation blueprint x)]
-       (binding [*error-reporter* error-reporter
-                 *data-under-validation* x
-                 *pre-validation-transform* (or *pre-validation-transform* (:pre-validation-transform blueprint))
-                 *original* (or *original* (if (:pre-validation-transform blueprint) x nil))
-                 *data-under-validation---post-transformation* prepped-x
-                 *blueprint* blueprint
-                 *parent-path* parent-path]
-         (if (= ::exception prepped-x)
-           #{(pre-validation-transform-error *error-reporter* (state-map-for-reporter *parent-path*) x (:pre-validation-transform *blueprint*))}
-           (if-let [c-errors (seq (constraint-errors))]
-             (set c-errors)
-             ((validation-fn blueprint) parent-path blueprint prepped-x)))))))
+    (let [blueprint (s/ensure-blueprint blueprint)
+          prepped-x (prepare-for-validation blueprint x)]
+        (binding [*error-reporter* error-reporter
+                  *data-under-validation* x
+                  *pre-validation-transform* (or *pre-validation-transform* (:pre-validation-transform blueprint))
+                  *original* (or *original* (if (:pre-validation-transform blueprint) x nil))
+                  *data-under-validation---post-transformation* prepped-x
+                  *blueprint* blueprint
+                  *parent-path* parent-path]
+          (if (= ::exception prepped-x)
+            #{(pre-validation-transform-error *error-reporter* (state-map-for-reporter *parent-path*) x (:pre-validation-transform *blueprint*))}
+            (if-let [c-errors (seq (constraint-errors))]
+              (set c-errors)
+              ((validation-fn blueprint) parent-path blueprint prepped-x)))))))
 
 (defn valid?
   "Returns true if calling `validation-errors` would return no errors"
@@ -305,8 +305,8 @@
    If it passes, then calls success-handler-fn passing m to it.
    If it fails, then calls error-handler-fn passing m and any validation errors to it."
   ([error-reporter m blueprint success-handler-fn error-handler-fn]
-     (if-let [errors (seq (validation-errors error-reporter blueprint m))]
-       (error-handler-fn m errors)
-       (success-handler-fn m)))
+    (if-let [errors (seq (validation-errors error-reporter blueprint m))]
+      (error-handler-fn m errors)
+      (success-handler-fn m)))
   ([m blueprint success-handler-fn error-handler-fn]
-     (validate-and-handle (StringErrorReporter.) m blueprint success-handler-fn error-handler-fn)))
+    (validate-and-handle (StringErrorReporter.) m blueprint success-handler-fn error-handler-fn)))
