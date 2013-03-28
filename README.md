@@ -2,7 +2,7 @@ To Use
 ======
 
 ```clj
-[org.clojars.runa/clj-schema "0.8.10"]
+[org.clojars.runa/clj-schema "0.9.0"]
 ```
 
 Travis CI Status
@@ -258,12 +258,12 @@ Test Data and Test Data Factories
 Rationale: to keep your test data from growing out of sync with your real data,
 and to make factories for concisely creating valid fake data for tests.
 
-You can find this code in the clj-schema.fixtures namespace.
+You can find this code in the clj-schema.examples namespace.
 
 These should probably be renamed to something less confusing. Any ideas?
 
 ```clj
-(:require [clj-schema.fixtures :refer [def-fixture def-fixture-factory])
+(:require [clj-schema.examples :refer [def-example def-example-factory])
 
 (def-map-schema person-schema
   [[:name :first] String
@@ -272,13 +272,13 @@ These should probably be renamed to something less confusing. Any ideas?
 
 ;; This will blow up at load time if the 'alex' map you want to use in your test
 ;; turns out to not be valid
-(def-fixture alex person-schema
+(def-example alex person-schema
   {:name {:first "Alex"
           :last "Baranosky"}
    :height 71})
 
 ;; Let's define a factory that makes people. And then...
-(def-fixture-factory person person-schema
+(def-example-factory person person-schema
   [& {:keys [first-name last-name height]
       :or {first-name "Alex"
            last-name "Baranosky"
@@ -292,13 +292,13 @@ These should probably be renamed to something less confusing. Any ideas?
   (is (= [(person :height 67) (person :height 89) (person :height 98)]
          (sort-people-by-height [(person :height 98) (person :height 67) (person :height 89)]))))
 
-;; Fixture factories can also be defined as multi-arity
+;; example factories can also be defined as multi-arity
 (def-seq-schema :layout point-schema
   (constraints (fn [[x y]] 
                  (= (class x) (class y))))
   [Number Number])
 
-(def-fixture-factory point point-schema
+(def-example-factory point point-schema
   ([x y] 
     [x y])
   ([length]
@@ -326,11 +326,6 @@ recommend you check it out.
 (checked/POST "/user" {^{:check #(val/validation-errors user-params-schema %)} params :params}
   (do-something params))
 ```
-
-Developer Tests
-===============
-
-Run them with `./run-tests.sh`.  This will run all unit tests in Clojure 1.2 - 1.5, ensuring this library is usable by the widest number of projects.
 
 Contributors
 ============
