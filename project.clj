@@ -6,9 +6,9 @@
                  :subscribe "https://groups.google.com/forum/?fromgroups#!forum/clj-schema"}
   :license {:name "MIT License"
             :url "http://mit-license.org/"}
-  :profiles {:user {:dependencies [[org.clojure/clojure "1.5.1"]
-                                   [robert/hooke "1.3.0"]]}
-             :dev {:dependencies [[jonase/kibit "0.0.3"]
+  :dependencies [[org.clojure/clojure "1.5.1"]
+                 [robert/hooke "1.3.0"]]
+  :profiles {:dev {:dependencies [[jonase/kibit "0.0.3"]
                                   [print-foo "0.3.3"]
                                   [slamhound "1.3.0"]
                                   [org.clojure/tools.trace "0.7.3"]]
