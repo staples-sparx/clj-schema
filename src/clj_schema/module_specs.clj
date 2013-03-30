@@ -14,20 +14,30 @@
    (optional-path [:output-schema]) Anything
    (optional-path [:output-schema-on-failure]) fn?])
 
-(defn- schema-checker-fn [{:keys [module-entry-point-var input-schema input-schema-on-failure output-schema output-schema-on-failure]}]
+(defn- schema-checker-fn [{:keys [module-entry-point-var
+                                  input-schema
+                                  input-schema-on-failure
+                                  input-schema-on-success
+                                  output-schema
+                                  output-schema-on-failure
+                                  output-schema-on-success]}]
   (fn [f & args]
     (let [errors (and input-schema (validation-errors input-schema args))]
-      (when (seq errors)
+      (if (seq errors)
         (if input-schema-on-failure
           (input-schema-on-failure module-entry-point-var (vec args) errors)
-          (throw (Exception. (str "Errors found in inputs, " (vec args) ", to " module-entry-point-var ": " errors))))))
+          (throw (Exception. (str "Errors found in inputs, " (vec args) ", to " module-entry-point-var ": " errors))))
+        (when input-schema-on-success
+          (input-schema-on-success module-entry-point-var (vec args)))))
 
     (let [result (apply f args)
           errors (and output-schema (validation-errors output-schema result))]
-      (when (seq errors)
+      (if (seq errors)
         (if output-schema-on-failure
           (output-schema-on-failure module-entry-point-var result errors)
-          (throw (Exception. (str "Errors found in outputs, " result ", from " module-entry-point-var ": " errors)))))
+          (throw (Exception. (str "Errors found in outputs, " result ", from " module-entry-point-var ": " errors))))
+        (when output-schema-on-success
+          (output-schema-on-success module-entry-point-var result)))
       result)))
 
 (defn add-module-specs-hooks! [specifications]
