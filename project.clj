@@ -1,4 +1,4 @@
-(defproject org.clojars.runa/clj-schema "0.9.0"
+(defproject org.clojars.runa/clj-schema "0.9.1-SNAPSHOT"
   :min-lein-version "2.0.0"
   :description "Schemas for Clojure data. With validation and example data for tests"
   :url "https://github.com/runa-dev/clj-schema"
@@ -6,7 +6,8 @@
                  :subscribe "https://groups.google.com/forum/?fromgroups#!forum/clj-schema"}
   :license {:name "MIT License"
             :url "http://mit-license.org/"}
-  :profiles {:user {:dependencies [[org.clojure/clojure "1.5.1"]]}
+  :profiles {:user {:dependencies [[org.clojure/clojure "1.5.1"]
+                                   [robert/hooke "1.3.0"]]}
              :dev {:dependencies [[gui-diff "0.5.0"]
                                   [jonase/kibit "0.0.3"]
                                   [slamhound "1.3.0"]
