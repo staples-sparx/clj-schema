@@ -1,7 +1,7 @@
 (ns clj-schema.module-specs-test
-  (:require [clojure.test :refer :all]
-            [clj-schema.module-specs :refer :all]
-            [clj-schema.schema :as schema]))
+  (:use clojure.test
+        clj-schema.module-specs)
+  (:require [clj-schema.schema :as schema]))
 
 
 (defn f [a & bs]

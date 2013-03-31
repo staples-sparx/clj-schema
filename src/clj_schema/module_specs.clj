@@ -1,10 +1,10 @@
 (ns clj-schema.module-specs
   "Aspect-oriented function input/output schema validations, intended
    to be used to test the module boundaries of your application"
-  (:require [clj-schema.schema :refer [def-map-schema optional-path schema? sequence-of]]
-            [clj-schema.simple-schemas :refer [Anything]]
-            [clj-schema.validation :refer [validation-errors]]
-            [robert.hooke :as hooke]))
+  (:use [clj-schema.schema :refer [def-map-schema optional-path schema? sequence-of]]
+        [clj-schema.simple-schemas :refer [Anything]]
+        [clj-schema.validation :refer [validation-errors]])
+  (:require [robert.hooke :as hooke]))
 
 
 (def-map-schema :loose module-spec-schema

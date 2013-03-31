@@ -1,6 +1,6 @@
 (ns clj-schema.test-schemas
-  (:use [clj-schema.schema]
-        [clj-schema.simple-schemas]))
+  (:use clj-schema.schema
+        clj-schema.simple-schemas))
 
 
 (def-map-schema name-schema   [[:name :first] String])
