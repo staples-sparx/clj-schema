@@ -604,6 +604,9 @@
   (is (= #{"Value 55 could not be transformed before validation using '#'clojure.core/read-string'."}
          (validation-errors (->string-schema [Long pos?]) 55))))
 
+(deftest test-after-transform
+  (is (= #{} (validation-errors (after-transform #'deref (sequence-of Long)) (atom [1 2 3])))))
+
 (deftest test-seq-layouts
   (is (= #{}
          (validation-errors checkers-board-schema [[1 0 1 0 1 0 1 0]

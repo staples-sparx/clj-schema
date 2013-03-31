@@ -248,6 +248,15 @@ map under-validation to have more keys than are specified in the schema."
 (def ^{:doc "Wraps a schema to make it a schema that apply to every element of a set"}
   set-of set-schema)
 
+(defn after-transform
+  "Wraps a schema. Returns a new schema that is a String that when read matches
+   the wrapped schema.
+
+   Ex. (validation-errors (after-transform deref (sequence-of Long)) (atom [1 2 3])) 
+       ;; => #{}"
+  [transform-var schema]
+  (assoc (ensure-schema schema) :pre-validation-transform transform-var))
+
 (defn ->string-schema
   "Wraps a schema. Returns a new schema that is a String that when read matches
    the wrapped schema.
@@ -255,7 +264,7 @@ map under-validation to have more keys than are specified in the schema."
    Ex. (validation-errors (->string-schema (sequence-of Long)) \"[55, -33]\")
        ;; => #{}"
   [schema]
-  (assoc (ensure-schema schema) :pre-validation-transform #'read-string))
+  (after-transform #'read-string (ensure-schema schema)))
 
 
 ;; Wildcard Paths
