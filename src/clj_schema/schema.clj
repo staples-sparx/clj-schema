@@ -252,7 +252,7 @@ map under-validation to have more keys than are specified in the schema."
   "Wraps a schema. Returns a new schema that is a String that when read matches
    the wrapped schema.
 
-   Ex. (validation-errors (after-transform deref (sequence-of Long)) (atom [1 2 3])) 
+   Ex. (validation-errors (after-transform #'deref (sequence-of Long)) (atom [1 2 3]))
        ;; => #{}"
   [transform-var schema]
   (assoc (ensure-schema schema) :pre-validation-transform transform-var))
