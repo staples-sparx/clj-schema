@@ -1,5 +1,5 @@
 (ns clj-schema.contracts
-  "Unobtrusively apply contracts to vars that hold functions"
+  "Unobtrusively apply contracts to functions vars"
   (:use [clj-schema.schema :refer [def-map-schema optional-path schema? sequence-of]]
         [clj-schema.simple-schemas :refer [Anything]]
         [clj-schema.validation :refer [validation-errors]])
@@ -52,7 +52,22 @@
 
 (defn add-contracts!
   "Wrap vars specified in contract maps such that they check
-   inputs and outputs against supplied schemas"
+   inputs and outputs against supplied schemas.
+
+   Example fully-decked-out contract:
+
+   {:var #'f
+    :sampling-rate 50 ;; 0-100 (percent)
+    :input-schema (schema/sequence-of [:or String clojure.lang.Keyword])
+    :input-schema-on-failure (fn [f input errors]
+                               (log/error [f input errors]))
+    :input-schema-on-success (fn [f input]
+                               (log/info [f input]))
+    :output-schema String
+    :output-schema-on-failure (fn [f result errors]
+                                (log/error [f result errors]))
+    :output-schema-on-success (fn [f result]
+                                (log/info [f result]))}"
   [contracts]
   (when-let [errors (seq (validation-errors (sequence-of contract-schema) contracts))]
     (throw (Exception. (str "contracts were not valid: " contracts errors))))
