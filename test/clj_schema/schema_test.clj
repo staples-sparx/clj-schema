@@ -7,6 +7,7 @@
 
 (deftest all-public-vars-have-docstrings
   (is (= [] (map str (remove (comp :doc meta) (vals (ns-publics 'clj-schema.schema))))))
+  (is (= [] (map str (remove (comp :doc meta) (vals (ns-publics 'clj-schema.contracts))))))
   (is (= [] (map str (remove #(= '->StringErrorReporter (:name (meta %))) (remove (comp :doc meta) (vals (ns-publics 'clj-schema.validation)))))))
   (is (= [] (map str (remove (comp :doc meta) (vals (ns-publics 'clj-schema.example)))))))
 

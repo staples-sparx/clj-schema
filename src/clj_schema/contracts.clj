@@ -6,7 +6,7 @@
   (:require [robert.hooke :as hooke]))
 
 
-(def-map-schema :loose contract-schema
+(def-map-schema :loose ^:private contract-schema
   [[:var] var?
    (optional-path [:input-schema]) Anything
    (optional-path [:input-schema-on-failure]) fn?
