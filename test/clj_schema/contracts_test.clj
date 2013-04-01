@@ -83,3 +83,23 @@
          @output-success-state))
 
   (remove-contracts! oprahs-contracts))
+
+(def flaky-contracts
+  [{:var #'f    
+    :sampling-rate 50
+    :input-schema (schema/sequence-of String)}])
+
+(deftest test-contract-sampling-rate
+  (add-contracts! flaky-contracts)
+  (with-redefs [rand-int (constantly 49)]
+    (is (thrown-with-msg? Exception #"Errors found in inputs"
+          (f "a" 'b 'c))))
+
+  (with-redefs [rand-int (constantly 50)]
+    (is (thrown-with-msg? Exception #"Errors found in inputs"
+          (f "a" 'b 'c))))
+
+  (with-redefs [rand-int (constantly 51)]
+    (f "a" 'b 'c)) ;; no exception!
+
+  (remove-contracts! flaky-contracts))

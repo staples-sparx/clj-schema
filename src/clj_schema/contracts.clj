@@ -8,12 +8,19 @@
 
 (def-map-schema :loose ^:private contract-schema
   [[:var] var?
+   (optional-path [:sampling-rate]) [:or nil [integer? #(>= % 0) #(<= % 100)]]
    (optional-path [:input-schema]) Anything
-   (optional-path [:input-schema-on-failure]) fn?
+   (optional-path [:input-schema-on-failure]) [:or nil fn?]
    (optional-path [:output-schema]) Anything
-   (optional-path [:output-schema-on-failure]) fn?])
+   (optional-path [:output-schema-on-failure]) [:or nil fn?]])
+
+(defn- check? [sampling-rate]
+  (if sampling-rate
+    (>= sampling-rate (rand-int 101))
+    true))
 
 (defn- schema-checker-fn [{:keys [var
+                                  sampling-rate
                                   input-schema
                                   input-schema-on-failure
                                   input-schema-on-success
@@ -21,23 +28,27 @@
                                   output-schema-on-failure
                                   output-schema-on-success]}]
   (fn [f & args]
-    (let [errors (and input-schema (validation-errors input-schema args))]
-      (if (seq errors)
-        (if input-schema-on-failure
-          (input-schema-on-failure var (vec args) errors)
-          (throw (Exception. (str "Errors found in inputs, " (vec args) ", to " var ": " errors))))
-        (when input-schema-on-success
-          (input-schema-on-success var (vec args)))))
+    (let [check? (check? sampling-rate)]
+      (when check?
+        (let [errors (and input-schema (validation-errors input-schema args))]
+          (if (seq errors)
+            (if input-schema-on-failure
+              (input-schema-on-failure var (vec args) errors)
+              (throw (Exception. (str "Errors found in inputs, " (vec args) ", to " var ": " errors))))
+            (when input-schema-on-success
+              (input-schema-on-success var (vec args))))))
 
-    (let [result (apply f args)
-          errors (and output-schema (validation-errors output-schema result))]
-      (if (seq errors)
-        (if output-schema-on-failure
-          (output-schema-on-failure var result errors)
-          (throw (Exception. (str "Errors found in outputs, " result ", from " var ": " errors))))
-        (when output-schema-on-success
-          (output-schema-on-success var result)))
-      result)))
+      (let [result (apply f args)
+            errors (when check?
+                     (and output-schema (validation-errors output-schema result)))]
+        (when check?
+          (if (seq errors)
+            (if output-schema-on-failure
+              (output-schema-on-failure var result errors)
+              (throw (Exception. (str "Errors found in outputs, " result ", from " var ": " errors))))
+            (when output-schema-on-success
+              (output-schema-on-success var result))))
+        result))))
 
 (defn add-contracts!
   "Wrap vars specified in contract maps such that they check
