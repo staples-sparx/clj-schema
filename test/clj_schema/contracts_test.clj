@@ -1,21 +1,21 @@
-(ns clj-schema.module-specs-test
+(ns ^:alpha clj-schema.contracts-test
   (:use clojure.test
-        clj-schema.module-specs)
+        clj-schema.contracts)
   (:require [clj-schema.schema :as schema]))
 
 
 (defn f [a & bs]
   (keyword (apply str a bs)))
 
-(def my-specs
-  [{:module-entry-point-var #'f
+(def my-contracts
+  [{:var #'f
     :input-schema (schema/sequence-of [:or String clojure.lang.Keyword])
     :output-schema String}])
 
-(deftest test-hooking-module-specs
+(deftest test-adding-contracts
   (f "a" :b :c)
 
-  (add-module-specs-hooks! my-specs)
+  (add-contracts! my-contracts)
 
   (is (thrown-with-msg? Exception #"Errors found in inputs"
         (f "a" 'b 'c)))
@@ -23,14 +23,14 @@
   (is (thrown-with-msg? Exception #"Errors found in outputs"
         (f "a" "b" :c)))
 
-  (remove-module-spec-hooks! my-specs)
+  (remove-contracts! my-contracts)
   (f "a" 'b 'c))
 
 (def input-failure-state (atom nil))
 (def output-failure-state (atom nil))
 
-(def your-specs
-  [{:module-entry-point-var #'f
+(def your-contracts
+  [{:var #'f
     :input-schema (schema/sequence-of [:or String clojure.lang.Keyword])
     :input-schema-on-failure (fn [f input errors]
                                (reset! input-failure-state [f input errors]))
@@ -39,10 +39,10 @@
                                 (reset! output-failure-state [f result errors]))}])
 
 (deftest test-specifying-on-failure-handlers
-  (add-module-specs-hooks! your-specs)
+  (add-contracts! your-contracts)
 
   (f "a" 'b 'c)
-  (is (= [#'clj-schema.module-specs-test/f
+  (is (= [#'clj-schema.contracts-test/f
           ["a" 'b 'c]
           #{"Expected value c, at path [2], to be an instance of class java.lang.String, but was clojure.lang.Symbol"
             "Expected value b, at path [1], to be an instance of class java.lang.String, but was clojure.lang.Symbol"
@@ -51,19 +51,19 @@
          @input-failure-state))
 
   (f "a" "b" "c")
-  (is (= [#'clj-schema.module-specs-test/f
+  (is (= [#'clj-schema.contracts-test/f
           :abc
           #{"Expected value :abc to be an instance of class java.lang.String, but was clojure.lang.Keyword"}]
          @output-failure-state))
 
-  (remove-module-spec-hooks! your-specs))
+  (remove-contracts! your-contracts))
 
 
 (def input-success-state (atom nil))
 (def output-success-state (atom nil))
 
-(def oprahs-specs
-  [{:module-entry-point-var #'f
+(def oprahs-contracts
+  [{:var #'f
     :input-schema (schema/sequence-of String)
     :input-schema-on-success (fn [f input]
                                (reset! input-success-state [f input]))
@@ -72,14 +72,14 @@
                                 (reset! output-success-state [f result]))}])
 
 (deftest test-specifying-on-success-handlers
-  (add-module-specs-hooks! oprahs-specs)
+  (add-contracts! oprahs-contracts)
 
   (f "a" "b" "c")
-  (is (= [#'clj-schema.module-specs-test/f ["a" "b" "c"]]
+  (is (= [#'clj-schema.contracts-test/f ["a" "b" "c"]]
          @input-success-state))
 
   (f "a" "b" "c")
-  (is (= [#'clj-schema.module-specs-test/f :abc]
+  (is (= [#'clj-schema.contracts-test/f :abc]
          @output-success-state))
 
-  (remove-module-spec-hooks! oprahs-specs))
+  (remove-contracts! oprahs-contracts))
