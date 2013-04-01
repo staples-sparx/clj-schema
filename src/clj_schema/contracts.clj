@@ -7,7 +7,7 @@
 
 
 (def-map-schema :loose contract-schema
-  [(optional-path [:var]) var?
+  [[:var] var?
    (optional-path [:input-schema]) Anything
    (optional-path [:input-schema-on-failure]) fn?
    (optional-path [:output-schema]) Anything
@@ -40,7 +40,8 @@
       result)))
 
 (defn add-contracts!
-  ""
+  "Wrap vars specified in contract maps such that they check
+   inputs and outputs against supplied schemas"
   [contracts]
   (when-let [errors (seq (validation-errors (sequence-of contract-schema) contracts))]
     (throw (Exception. (str "contracts were not valid: " contracts errors))))
@@ -48,7 +49,7 @@
     (hooke/add-hook (:var c) ::contract (schema-checker-fn c))))
 
 (defn remove-contracts!
-  ""
+  "Removes all contracts that were added by calling clj-schema.contracts/add-contracts!"
   [contracts]
   (when-let [errors (seq (validation-errors (sequence-of contract-schema) contracts))]
     (throw (Exception. (str "contracts were not valid: " contracts errors))))
