@@ -8,16 +8,19 @@
 
 (def-map-schema :loose ^:private contract-schema
   [[:var] var?
-   (optional-path [:sampling-rate]) [:or nil [integer? #(>= % 0) #(<= % 100)]]
+   (optional-path [:sampling-rate]) [:or nil fn? [integer? #(>= % 0) #(<= % 100)]]
    (optional-path [:input-schema]) Anything
    (optional-path [:input-schema-on-failure]) [:or nil fn?]
    (optional-path [:output-schema]) Anything
    (optional-path [:output-schema-on-failure]) [:or nil fn?]])
 
-(defn- check? [sampling-rate]
-  (if sampling-rate
-    (>= sampling-rate (rand-int 101))
-    true))
+(defn- check? [sampling-rate' args]
+  (let [sampling-rate (if (fn? sampling-rate')
+                            (apply sampling-rate' args)
+                            sampling-rate')]
+    (if sampling-rate
+      (>= sampling-rate (rand-int 101))
+      true)))
 
 (defn- schema-checker-fn [{:keys [var
                                   sampling-rate
@@ -28,7 +31,7 @@
                                   output-schema-on-failure
                                   output-schema-on-success]}]
   (fn [f & args]
-    (let [check? (check? sampling-rate)]
+    (let [check? (check? sampling-rate args)]
       (when check?
         (let [errors (and input-schema (validation-errors input-schema args))]
           (if (seq errors)
@@ -58,6 +61,8 @@
 
    {:var #'f
     :sampling-rate 50 ;; 0-100 (percent)
+    ;; or ... :sampling-rate (fn [a b c] (sampling-rate a b c))
+    ;;    ...  can take a fn here that gets the args sent to the fn (#'f)
     :input-schema (schema/sequence-of [:or String clojure.lang.Keyword])
     :input-schema-on-failure (fn [f input errors]
                                (log/error [f input errors]))

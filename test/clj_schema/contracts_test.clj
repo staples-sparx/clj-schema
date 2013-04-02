@@ -103,3 +103,27 @@
     (f "a" 'b 'c)) ;; no exception!
 
   (remove-contracts! flaky-contracts))
+
+(defn doubler [n]
+  (* 2 n))
+
+(def fn-dependent-contracts
+  [{:var #'doubler
+    :sampling-rate (fn [n] n)
+    :input-schema String}])
+
+(deftest test-contract-with-function-sampling-rate
+  (add-contracts! fn-dependent-contracts)
+
+  (with-redefs [rand-int (constantly 49)]
+    (is (thrown-with-msg? Exception #"Errors found in inputs"
+           (doubler 50))))
+
+  (with-redefs [rand-int (constantly 50)]
+    (is (thrown-with-msg? Exception #"Errors found in inputs"
+             (doubler 50))))
+
+  (with-redefs [rand-int (constantly 51)]
+    (doubler 50)) ;; no exception!
+
+  (remove-contracts! fn-dependent-contracts))
