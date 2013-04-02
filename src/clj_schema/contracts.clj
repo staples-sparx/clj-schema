@@ -14,13 +14,10 @@
    (optional-path [:output-schema]) Anything
    (optional-path [:output-schema-on-failure]) [:or nil fn?]])
 
-(defn- check? [sampling-rate' args]
-  (let [sampling-rate (if (fn? sampling-rate')
-                            (apply sampling-rate' args)
-                            sampling-rate')]
-    (if sampling-rate
-      (>= sampling-rate (rand-int 101))
-      true)))
+(defn- check? [sampling-rate args]
+  (cond (not sampling-rate) true
+        (fn? sampling-rate) (>= (apply sampling-rate args) (rand-int 101))
+        :else               (>= sampling-rate (rand-int 101))))
 
 (defn- schema-checker-fn [{:keys [var
                                   sampling-rate
@@ -41,16 +38,15 @@
             (when input-schema-on-success
               (input-schema-on-success var (vec args))))))
 
-      (let [result (apply f args)
-            errors (when check?
-                     (and output-schema (validation-errors output-schema result)))]
+      (let [result (apply f args)]
         (when check?
-          (if (seq errors)
-            (if output-schema-on-failure
-              (output-schema-on-failure var result errors)
-              (throw (Exception. (str "Errors found in outputs, " result ", from " var ": " errors))))
-            (when output-schema-on-success
-              (output-schema-on-success var result))))
+          (let [errors (and output-schema (validation-errors output-schema result))]
+            (if (seq errors)
+              (if output-schema-on-failure
+                (output-schema-on-failure var result errors)
+                (throw (Exception. (str "Errors found in outputs, " result ", from " var ": " errors))))
+              (when output-schema-on-success
+                (output-schema-on-success var result)))))
         result))))
 
 (defn add-contracts!
