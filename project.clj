@@ -1,4 +1,4 @@
-(defproject org.clojars.runa/clj-schema "0.9.2"
+(defproject org.clojars.runa/clj-schema "0.9.3"
   :min-lein-version "2.0.0"
   :description "Schemas for Clojure data. With validation and example data for tests"
   :url "https://github.com/runa-dev/clj-schema"

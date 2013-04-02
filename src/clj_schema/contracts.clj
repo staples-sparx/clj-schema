@@ -8,7 +8,7 @@
 
 (def-map-schema :loose ^:private contract-schema
   [[:var] var?
-   (optional-path [:sampling-rate]) [:or nil fn? [integer? #(>= % 0) #(<= % 100)]]
+   (optional-path [:sampling-rate]) [:or nil fn? [number? #(>= % 0) #(<= % 100)]]
    (optional-path [:input-schema]) Anything
    (optional-path [:input-schema-on-failure]) [:or nil fn?]
    (optional-path [:output-schema]) Anything
@@ -16,8 +16,8 @@
 
 (defn- check? [sampling-rate args]
   (cond (not sampling-rate) true
-        (fn? sampling-rate) (>= (apply sampling-rate args) (rand-int 101))
-        :else               (>= sampling-rate (rand-int 101))))
+        (fn? sampling-rate) (> (apply sampling-rate args) (rand 100))
+        :else               (> sampling-rate (rand 100))))
 
 (defn- schema-checker-fn [{:keys [var
                                   sampling-rate

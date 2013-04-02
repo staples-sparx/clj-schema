@@ -91,16 +91,12 @@
 
 (deftest test-contract-sampling-rate
   (add-contracts! flaky-contracts)
-  (with-redefs [rand-int (constantly 49)]
+  (with-redefs [rand (constantly 49.999)]
     (is (thrown-with-msg? Exception #"Errors found in inputs"
           (f "a" 'b 'c))))
 
-  (with-redefs [rand-int (constantly 50)]
-    (is (thrown-with-msg? Exception #"Errors found in inputs"
-          (f "a" 'b 'c))))
-
-  (with-redefs [rand-int (constantly 51)]
-    (f "a" 'b 'c)) ;; no exception!
+  (with-redefs [rand (constantly 50.0)]
+    (f "a" 'b 'c))
 
   (remove-contracts! flaky-contracts))
 
@@ -110,20 +106,24 @@
 (def fn-dependent-contracts
   [{:var #'doubler
     :sampling-rate (fn [n] n)
-    :input-schema String}])
+    :output-schema String}])
 
 (deftest test-contract-with-function-sampling-rate
   (add-contracts! fn-dependent-contracts)
 
-  (with-redefs [rand-int (constantly 49)]
-    (is (thrown-with-msg? Exception #"Errors found in inputs"
+  (with-redefs [rand (constantly 49.999)]
+    (is (thrown-with-msg? Exception #"Errors found in outputs"
            (doubler 50))))
 
-  (with-redefs [rand-int (constantly 50)]
-    (is (thrown-with-msg? Exception #"Errors found in inputs"
-             (doubler 50))))
-
-  (with-redefs [rand-int (constantly 51)]
+  (with-redefs [rand (constantly 50.0)]
     (doubler 50)) ;; no exception!
+
+  ;; Lower-bound edge case
+  (with-redefs [rand (constantly 0.0)]
+    (doubler 0))
+
+  ;; Upper-bound edge case
+  (with-redefs [rand (constantly 100.0)]
+    (doubler 100))
 
   (remove-contracts! fn-dependent-contracts))
