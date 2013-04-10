@@ -167,6 +167,7 @@ map under-validation to have more keys than are specified in the schema."
         schema-specs (apply concat (filter schema-spec? constraints-and-schema-vectors))
         flattened-schema-specs (vec (concat inherited-schema-specs schema-specs))
         compiled-schema-specs (u/map-nth 2 ensure-schema flattened-schema-specs)]
+    (assert (contains? #{:strict :loose} looseness))
     (assert (even? (count schema-specs)))
     (assert (every? sequential? (schema-path-set {:schema-spec schema-specs})))
     {:type :map
@@ -183,7 +184,6 @@ map under-validation to have more keys than are specified in the schema."
   (let [[looseness name & constraints-and-schema-vectors] (if (keyword? (first args))
                                                             args
                                                             (cons :strict args))]
-    (assert (contains? #{:strict :loose} looseness))
     `(def ~(vary-meta name assoc ::schema true ::strict (= :strict looseness))
        (map-schema ~looseness ~@constraints-and-schema-vectors))))
 
