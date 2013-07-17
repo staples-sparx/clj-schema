@@ -1,6 +1,10 @@
 (ns ^{:doc "Common simple schemas shared within validation schemas."}
   clj-schema.simple-schemas
-  (:use [clj-schema.schema :only [def-simple-schema simple-schema]])
+  (:use [clj-schema.schema :only [and-statement-schema
+                                  class-schema
+                                  def-simple-schema
+                                  predicate-schema
+                                  simple-schema]])
   (:require [clj-schema.internal.utils :as u])
   (:import clojure.lang.Keyword))
 
@@ -41,5 +45,5 @@
   (if (and (set? (first values))
            (= 1 (count values)))
     ;; just for convenience if you want to say (OneOf #{:a :b :c})
-    (simple-schema [(class (ffirst values)) (first values)])
-    (simple-schema [(class (first values)) (set values)])))
+    (and-statement-schema [(class-schema (class (ffirst values))) (simple-schema (first values))])
+    (and-statement-schema [(class-schema (class (first values))) (predicate-schema (set values))])))

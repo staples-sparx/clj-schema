@@ -52,6 +52,8 @@ map under-validation to have more keys than are specified in the schema."
 
 ;;; Schemas For Arbitrary Data Structures or Values: Simple Schemas
 
+(declare ensure-schema)
+
 (defn class-schema
   "Creates a schema that states the item should be
    an instance of the supplied Class.
@@ -67,7 +69,7 @@ map under-validation to have more keys than are specified in the schema."
    Can be used for any arbitrary data structure or value."
   [schemas]
   {:type :or-statement
-   :schema-spec schemas
+   :schema-spec (vec (map ensure-schema schemas))
    :constraints []})
 
 (defn and-statement-schema
@@ -76,7 +78,7 @@ map under-validation to have more keys than are specified in the schema."
    Can be used for any arbitrary data structure or value."
   [and-statement]
   {:type :and-statement
-   :schema-spec and-statement
+   :schema-spec (vec (map ensure-schema and-statement))
    :constraints []})
 
 (defn predicate-schema
@@ -279,7 +281,7 @@ map under-validation to have more keys than are specified in the schema."
    Ex. [:a (wild Integer) (wild String)], matches all paths like [:a 1 \"product-1\"] or [:a 42 \"product-2\"]"
   [schema]
   {::wildcard true
-   :schema schema})
+   :schema (ensure-schema schema)})
 
 (defn wildcard-path?
   "Returns whether or not a path is a wildcard-path"
