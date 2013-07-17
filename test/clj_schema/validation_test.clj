@@ -9,482 +9,478 @@
 (defn first-name-bob? [x]
   (-> x :name :first (= "Bob")))
 
+(defmacro ^:private test-case
+  [schema m errors]
+  ;; No autogensyms, cus it this way the reporting is readable.
+  `(let [~'schema ~schema
+         ~'errors ~errors
+         ~'m ~m]
+     (is (= ~'errors (validation-errors (if (schema? ~'schema)
+                                          ~'schema
+                                          (map-schema :strict ~'schema))
+                                        ~'m)))))
+
 (deftest test-validation-errors
-  (are [schema m errors] (= errors (validation-errors (if (schema? schema) schema (map-schema :strict schema)) m))
+  (testing "Degenerate cases"
+    (test-case  nil             {}          #{})
+    (test-case  []              {}          #{})
+    (test-case  nil             nil         #{})
+    (test-case  []              nil         #{}))
 
-;;;; Degenerate cases
+  (test-case  family-schema [[:a] 2 [:b] 4] #{"Constraint failed: '[:or nil? map?]'"})
 
-       nil             {}          #{}
-       []              {}          #{}
-       nil             nil         #{}
-       []              nil         #{}
+  (testing "One simple-schema per path"
+    (test-case [[:a] number?]
+               {:a 1}
+               #{})
+    
+    (test-case [[:b] Integer]
+               {}
+               #{"Map did not contain expected path [:b]."})
+    
+    (test-case [[:bb] Integer]
+               {:bb "bb"}
+               #{"Expected value \"bb\", at path [:bb], to be an instance of class java.lang.Integer, but was java.lang.String"})
+    
+    (test-case [[:b :c] Integer]
+               {:b "a"}
+               #{"Path [:b] was not specified in the schema."
+                 "Map did not contain expected path [:b :c]."})
+    
+    (test-case [[:b :c] Integer]
+               {:b {:c :a}}
+               #{"Expected value :a, at path [:b :c], to be an instance of class java.lang.Integer, but was clojure.lang.Keyword"}))
 
-       family-schema [[:a] 2 [:b] 4] #{"Constraint failed: '[:or nil? map?]'"}
+  (testing "Multiple predicates per path - lists all failures, not just first"
 
-       ;;
+    (test-case [[:a] [number? pos?]]
+               {:a 1}
+               #{})
+    
+    (test-case [[:b] [String Keyword]]
+               {}
+               #{"Map did not contain expected path [:b]."})
+    
+    (test-case [[:b] [String Keyword]]
+               {:b 1.1}
+               #{"Expected value 1.1, at path [:b], to be an instance of class java.lang.String, but was java.lang.Double"
+                 "Expected value 1.1, at path [:b], to be an instance of class clojure.lang.Keyword, but was java.lang.Double"})
+    
+    (test-case [[:b :c] [number? pos?]]
+               {:b "a"}
+               #{"Path [:b] was not specified in the schema."
+                 "Map did not contain expected path [:b :c]."})
+    
+    (test-case [[:b :c] [String Keyword]]
+               {:b {:c 1.1}}
+               #{"Expected value 1.1, at path [:b :c], to be an instance of class java.lang.String, but was java.lang.Double"
+                 "Expected value 1.1, at path [:b :c], to be an instance of class clojure.lang.Keyword, but was java.lang.Double"}))
 
-;;;; One simple-schema per path
+  ;;  "Handles combo of missing paths and erroneous values"
+  (test-case [[:b :c] [number? pos?]
+              [:b :d] identity
+              [:x :y] [neg? number?]
+              [:z :z :top] keyword?]
+             {:b {:c "a" :d :foo}
+              :x {:y 99}}
+             #{"Value \"a\", at path [:b :c], did not match predicate 'number?'."
+               "Value \"a\", at path [:b :c], did not match predicate 'pos?'."
+               "Map did not contain expected path [:z :z :top]."
+               "Value 99, at path [:x :y], did not match predicate 'neg?'." })
 
-       [[:a] number?]
-       {:a 1}
-       #{}
+  
+  (test-case [[:a] (sequence-of person-schema)]
+             {:a [{:name {:first "Roberto"} :height 11} {:name {:first "Roberto"} :height "11"}]}
+             #{"Expected value \"11\", at path [:a 1 :height], to be an instance of class java.lang.Number, but was java.lang.String"})
 
-       [[:b] Integer]
-       {}
-       #{"Map did not contain expected path [:b]."}
-
-       [[:bb] Integer]
-       {:bb "bb"}
-       #{"Expected value \"bb\", at path [:bb], to be an instance of class java.lang.Integer, but was java.lang.String"}
-
-       [[:b :c] Integer]
-       {:b "a"}
-       #{"Path [:b] was not specified in the schema."
-         "Map did not contain expected path [:b :c]."}
-
-       [[:b :c] Integer]
-       {:b {:c :a}}
-       #{"Expected value :a, at path [:b :c], to be an instance of class java.lang.Integer, but was clojure.lang.Keyword"}
-
-       ;;
-
-;;;; Multiple predicates per path - lists all failures, not just first
-
-       [[:a] [number? pos?]]
-       {:a 1}
-       #{}
-
-       [[:b] [String Keyword]]
-       {}
-       #{"Map did not contain expected path [:b]."}
-
-       [[:b] [String Keyword]]
-       {:b 1.1}
-       #{"Expected value 1.1, at path [:b], to be an instance of class java.lang.String, but was java.lang.Double"
-         "Expected value 1.1, at path [:b], to be an instance of class clojure.lang.Keyword, but was java.lang.Double"}
-
-       [[:b :c] [number? pos?]]
-       {:b "a"}
-       #{"Path [:b] was not specified in the schema."
-         "Map did not contain expected path [:b :c]."}
-
-       [[:b :c] [String Keyword]]
-       {:b {:c 1.1}}
-       #{"Expected value 1.1, at path [:b :c], to be an instance of class java.lang.String, but was java.lang.Double"
-         "Expected value 1.1, at path [:b :c], to be an instance of class clojure.lang.Keyword, but was java.lang.Double"}
-
-       ;;
-
-;;;; Handles combo of missing paths and erroneous values
-       [[:b :c] [number? pos?]
-        [:b :d] identity
-        [:x :y] [neg? number?]
-        [:z :z :top] keyword?]
-       {:b {:c "a" :d :foo}
-        :x {:y 99}}
-       #{"Value \"a\", at path [:b :c], did not match predicate 'number?'."
-         "Value \"a\", at path [:b :c], did not match predicate 'pos?'."
-         "Map did not contain expected path [:z :z :top]."
-         "Value 99, at path [:x :y], did not match predicate 'neg?'." }
-
-;;;; when using 'sequence-of' schema is applied against each element in the sequence at that key
-       [[:a] (sequence-of person-schema)]
-       {:a [{:name {:first "Roberto"} :height 11} {:name {:first "Roberto"} :height "11"}]}
-       #{"Expected value \"11\", at path [:a 1 :height], to be an instance of class java.lang.Number, but was java.lang.String"}
-
-;;;; if the schema path isn't present, and using a schema the seq, we get a "not present" error
-       [[:a] (sequence-of person-schema)]
-       {:not-a [{:name {:first "Roberto"} :height 34} {:name {:first "Roberto"} :height "34"}]}
-       #{"Map did not contain expected path [:a]."
-         "Path [:not-a] was not specified in the schema."}
+  ;;  "if the schema path isn't present, and using a schema the seq, we get a not present error"
+  (test-case [[:a] (sequence-of person-schema)]
+             {:not-a [{:name {:first "Roberto"} :height 34} {:name {:first "Roberto"} :height "34"}]}
+             #{"Map did not contain expected path [:a]."
+               "Path [:not-a] was not specified in the schema."})
 
 ;;;; if an optional schema path isn't present - no error messages
-       [(optional-path [:a]) (sequence-of person-schema)]
-       {:not-a [{:name {:first "Roberto"} :height 91} {:name {:first "Roberto"} :height "91"}]}
-       #{"Path [:not-a] was not specified in the schema."}
+  (test-case [(optional-path [:a]) (sequence-of person-schema)]
+             {:not-a [{:name {:first "Roberto"} :height 91} {:name {:first "Roberto"} :height "91"}]}
+             #{"Path [:not-a] was not specified in the schema."})
 
 ;;;; `optional-path` has no effect if the schema path is present
-       [(optional-path [:a]) (sequence-of person-schema)]
-       {:a [{:name {:first "Roberto"} :height 70} {:name {:first "Roberto"} :height "70"}]}
-       #{"Expected value \"70\", at path [:a 1 :height], to be an instance of class java.lang.Number, but was java.lang.String"}
+  (test-case [(optional-path [:a]) (sequence-of person-schema)]
+             {:a [{:name {:first "Roberto"} :height 70} {:name {:first "Roberto"} :height "70"}]}
+             #{"Expected value \"70\", at path [:a 1 :height], to be an instance of class java.lang.Number, but was java.lang.String"})
 
 ;;;; you can mix types of simple-schemas: preds with schemas
-       [[:a] (sequence-of [first-name-bob? person-schema])]
-       {:a [{:name {:first "Roberto"} :height 44} {:name {:first "Chris"} :height "4a"}]}
-       #{"Value {:name {:first \"Roberto\"}, :height 44}, at path [:a 0], did not match predicate 'clj-schema.validation-test/first-name-bob?'."
-         "Expected value \"4a\", at path [:a 1 :height], to be an instance of class java.lang.Number, but was java.lang.String"
-         "Value {:name {:first \"Chris\"}, :height \"4a\"}, at path [:a 1], did not match predicate 'clj-schema.validation-test/first-name-bob?'."}
+  (test-case [[:a] (sequence-of [first-name-bob? person-schema])]
+             {:a [{:name {:first "Roberto"} :height 44} {:name {:first "Chris"} :height "4a"}]}
+             #{"Value {:name {:first \"Roberto\"}, :height 44}, at path [:a 0], did not match predicate 'clj-schema.validation-test/first-name-bob?'."
+               "Expected value \"4a\", at path [:a 1 :height], to be an instance of class java.lang.Number, but was java.lang.String"
+               "Value {:name {:first \"Chris\"}, :height \"4a\"}, at path [:a 1], did not match predicate 'clj-schema.validation-test/first-name-bob?'."})
 
 ;;;; ...  multiple strict schemas together makes little sense - one schema will think extra keys were not specified by it, though they were by the other schema
-       [[:a] (sequence-of [name-schema person-schema])]
-       {:a [{:name {:first :Roberto} :height 69} {:name {:first "Roberto"} :height "69"}]}
-       #{"Path [:a 0 :height] was not specified in the schema."
-         "Path [:a 1 :height] was not specified in the schema."
-         "Expected value \"69\", at path [:a 1 :height], to be an instance of class java.lang.Number, but was java.lang.String"
-         "Expected value :Roberto, at path [:a 0 :name :first], to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
+  (test-case [[:a] (sequence-of [name-schema person-schema])]
+             {:a [{:name {:first :Roberto} :height 69} {:name {:first "Roberto"} :height "69"}]}
+             #{"Path [:a 0 :height] was not specified in the schema."
+               "Path [:a 1 :height] was not specified in the schema."
+               "Expected value \"69\", at path [:a 1 :height], to be an instance of class java.lang.Number, but was java.lang.String"
+               "Expected value :Roberto, at path [:a 0 :name :first], to be an instance of class java.lang.String, but was clojure.lang.Keyword"})
 
 ;;;; schema on right of schema, can be made an or, and can work with both preds and schemas mixed
-       [[:a] [:or nil? person-schema]]
-       {:a nil}
-       #{}
+  (test-case [[:a] [:or nil? person-schema]]
+             {:a nil}
+             #{})
 
 ;;;; you can have just one thing in the ':or' - but please don't it is weird
-       [[:a] (sequence-of [:or person-schema])]
-       {:a [{:name {:first "Roberto"} :height "76"}]}
-       #{"Expected value \"76\", at path [:a 0 :height], to be an instance of class java.lang.Number, but was java.lang.String"}
+  (test-case [[:a] (sequence-of [:or person-schema])]
+             {:a [{:name {:first "Roberto"} :height "76"}]}
+             #{"Expected value \"76\", at path [:a 0 :height], to be an instance of class java.lang.Number, but was java.lang.String"})
 
 ;;;; when both :or options fail - see errors for both 'nil?' and 'person-schema'
-       [[:a] [:or nil? person-schema]]
-       {:a {:name {:first "Roberto"} :height "66"}}
-       #{"Expected value \"66\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String" "Value {:name {:first \"Roberto\"}, :height \"66\"}, at path [:a], did not match predicate 'nil?'."}
+  (test-case [[:a] [:or nil? person-schema]]
+             {:a {:name {:first "Roberto"} :height "66"}}
+             #{"Expected value \"66\", at path [:a :height], to be an instance of class java.lang.Number, but was java.lang.String" "Value {:name {:first \"Roberto\"}, :height \"66\"}, at path [:a], did not match predicate 'nil?'."})
 
 ;;;; or collects all failures in the sequence being checked
-       [[:a] (sequence-of [:or nil? person-schema])]
-       {:a [{:name {:first "Roberto"} :height "88"} {:name {:first "Roberto"} :height 88}]}
-       #{"Expected value \"88\", at path [:a 0 :height], to be an instance of class java.lang.Number, but was java.lang.String" "Value {:name {:first \"Roberto\"}, :height \"88\"}, at path [:a 0], did not match predicate 'nil?'."}
+  (test-case [[:a] (sequence-of [:or nil? person-schema])]
+             {:a [{:name {:first "Roberto"} :height "88"} {:name {:first "Roberto"} :height 88}]}
+             #{"Expected value \"88\", at path [:a 0 :height], to be an instance of class java.lang.Number, but was java.lang.String" "Value {:name {:first \"Roberto\"}, :height \"88\"}, at path [:a 0], did not match predicate 'nil?'."})
 
 ;;;; nested schemas - no errors
-       [[:a :family] family-schema]
-       {:a {:family {:mom {:name {:first "Theresa"}
-                           :height 42}
-                     :dad {:name {:first "Stanley"}
-                           :height 53}}}}
-       #{}
+  (test-case [[:a :family] family-schema]
+             {:a {:family {:mom {:name {:first "Theresa"}
+                                 :height 42}
+                           :dad {:name {:first "Stanley"}
+                                 :height 53}}}}
+             #{})
 
 ;;;; nested schemas - with errors
-       [[:a :family] family-schema]
-       {:a {:family {:mom {:name {:first :Theresa}
-                           :height 42}
-                     :dad {:name {:first "Stanley"}
-                           :height :53}}}}
-       #{"Expected value :Theresa, at path [:a :family :mom :name :first], to be an instance of class java.lang.String, but was clojure.lang.Keyword"
-         "Expected value :53, at path [:a :family :dad :height], to be an instance of class java.lang.Number, but was clojure.lang.Keyword"}
+  (test-case [[:a :family] family-schema]
+             {:a {:family {:mom {:name {:first :Theresa}
+                                 :height 42}
+                           :dad {:name {:first "Stanley"}
+                                 :height :53}}}}
+             #{"Expected value :Theresa, at path [:a :family :mom :name :first], to be an instance of class java.lang.String, but was clojure.lang.Keyword"
+               "Expected value :53, at path [:a :family :dad :height], to be an instance of class java.lang.Number, but was clojure.lang.Keyword"})
 
 ;;;; strict schemas fail if there are more keys than specified
-       [[:a :family] family-schema]
-       {:a {:family {:mom {:name {:first "Theresa"
-                                  :last "Greepostalla"}
-                           :height 42
-                           :favorite-book "Twilight"}
-                     :child "David"
-                     :dad {:name {:first "Stanley"
-                                  :middle "Roberto-Gustav"}
-                           :height 53
-                           :favorite-sport "Fishing"}}
-            :house "Large"}
-        :b {:car "Honda Accord"}}
-       #{"Path [:b :car] was not specified in the schema."
-         "Path [:a :family :mom :favorite-book] was not specified in the schema."
-         "Path [:a :family :dad :name :middle] was not specified in the schema."
-         "Path [:a :family :child] was not specified in the schema."
-         "Path [:a :house] was not specified in the schema."
-         "Path [:a :family :mom :name :last] was not specified in the schema."
-         "Path [:a :family :dad :favorite-sport] was not specified in the schema."}
+  (test-case [[:a :family] family-schema]
+             {:a {:family {:mom {:name {:first "Theresa"
+                                        :last "Greepostalla"}
+                                 :height 42
+                                 :favorite-book "Twilight"}
+                           :child "David"
+                           :dad {:name {:first "Stanley"
+                                        :middle "Roberto-Gustav"}
+                                 :height 53
+                                 :favorite-sport "Fishing"}}
+                  :house "Large"}
+              :b {:car "Honda Accord"}}
+             #{"Path [:b :car] was not specified in the schema."
+               "Path [:a :family :mom :favorite-book] was not specified in the schema."
+               "Path [:a :family :dad :name :middle] was not specified in the schema."
+               "Path [:a :family :child] was not specified in the schema."
+               "Path [:a :house] was not specified in the schema."
+               "Path [:a :family :mom :name :last] was not specified in the schema."
+               "Path [:a :family :dad :favorite-sport] was not specified in the schema."})
 
 ;;;; nested loose schemas don't cause extra path errors for their paths, even if inside a surrounding strict schema
-       [[:a :family] mom-strict-dad-loose-family-schema]
-       {:a {:family {:mom {:name {:first "Theresa"
-                                  :last "Greepostalla"}
-                           :height 42
-                           :favorite-book "Twilight"}
-                     :child "David"
-                     :dad {:name {:first "Stanley"
-                                  :middle "Roberto-Gustav"}
-                           :height 53
-                           :favorite-sport "Fishing"}} ;; Dad's loose so this extra key causes no problems
-            :house "Large"}
-        :b {:car "Honda Accord"}}
-       #{"Path [:b :car] was not specified in the schema."
-         "Path [:a :family :mom :favorite-book] was not specified in the schema."
-         "Path [:a :family :child] was not specified in the schema."
-         "Path [:a :house] was not specified in the schema."
-         "Path [:a :family :mom :name :last] was not specified in the schema."}
+  (test-case [[:a :family] mom-strict-dad-loose-family-schema]
+             {:a {:family {:mom {:name {:first "Theresa"
+                                        :last "Greepostalla"}
+                                 :height 42
+                                 :favorite-book "Twilight"}
+                           :child "David"
+                           :dad {:name {:first "Stanley"
+                                        :middle "Roberto-Gustav"}
+                                 :height 53
+                                 :favorite-sport "Fishing"}} ;; Dad's loose so this extra key causes no problems
+                  :house "Large"}
+              :b {:car "Honda Accord"}}
+             #{"Path [:b :car] was not specified in the schema."
+               "Path [:a :family :mom :favorite-book] was not specified in the schema."
+               "Path [:a :family :child] was not specified in the schema."
+               "Path [:a :house] was not specified in the schema."
+               "Path [:a :family :mom :name :last] was not specified in the schema."})
 
 ;;;; stops looking for extra paths at validated path ends
-       [[:a :family] map?]
-       {:a {:family {:mom {:name {:first "Theresa"
-                                  :last "Greepostalla"}
-                           :height 42
-                           :favorite-book "Twilight"}
-                     :child "David"
-                     :dad {:name {:first "Stanley"
-                                  :middle "Roberto-Gustav"}
-                           :height 53
-                           :favorite-sport "Fishing"}} ;; Dad's loose so this extra key causes no problems
-            :house "Large"}
-        :b {:car "Honda Accord"}}
-       #{"Path [:b :car] was not specified in the schema."
-         "Path [:a :house] was not specified in the schema."}
+  (test-case [[:a :family] map?]
+             {:a {:family {:mom {:name {:first "Theresa"
+                                        :last "Greepostalla"}
+                                 :height 42
+                                 :favorite-book "Twilight"}
+                           :child "David"
+                           :dad {:name {:first "Stanley"
+                                        :middle "Roberto-Gustav"}
+                                 :height 53
+                                 :favorite-sport "Fishing"}} ;; Dad's loose so this extra key causes no problems
+                  :house "Large"}
+              :b {:car "Honda Accord"}}
+             #{"Path [:b :car] was not specified in the schema."
+               "Path [:a :house] was not specified in the schema."})
 
 ;;;; marked as 'sequence-of' but only one value - causes an error
-       [[:a] (sequence-of person-schema)]
-       {:a {:name {:first "Roberto"} :height "76"}}
-       #{"At parent path [:a], constraint failed: '[:or nil? sequential?]'"}
+  (test-case [[:a] (sequence-of person-schema)]
+             {:a {:name {:first "Roberto"} :height "76"}}
+             #{"At parent path [:a], constraint failed: '[:or nil? sequential?]'"})
 
 ;;;; using 'sequence-of' with an 'Number' class - means there is a seq of numbers
-       [[:a] (sequence-of Number)]
-       {:a 1}
-       #{"At parent path [:a], constraint failed: '[:or nil? sequential?]'"}
+  (test-case [[:a] (sequence-of Number)]
+             {:a 1}
+             #{"At parent path [:a], constraint failed: '[:or nil? sequential?]'"})
 
 ;;;; nil is an acceptable value for a 'sequence-of' schema
-       [[:a] (sequence-of integer?)]
-       {:a nil}
-       #{}
+  (test-case [[:a] (sequence-of integer?)]
+             {:a nil}
+             #{})
 
 ;;;; sequence-of can be used from within other nested simple-schemas -- [:a] is single item
-       [[:a] [:or Number (sequence-of Number)]]
-       {:a 4}
-       #{}
+  (test-case [[:a] [:or Number (sequence-of Number)]]
+             {:a 4}
+             #{})
 
 ;;;; ... <continued from above> -- [:a] is sequential
-       [[:a] [:or Number (sequence-of Number)]]
-       {:a [4 5 6 7]}
-       #{}
+  (test-case [[:a] [:or Number (sequence-of Number)]]
+             {:a [4 5 6 7]}
+             #{})
 
 ;;;; marked as 'set-of' but only one value - causes an error
-       [[:a] (set-of person-schema)]
-       {:a {:name {:first "Roberto"} :height "76"}}
-       #{"At parent path [:a], constraint failed: '[:or nil? set?]'"}
+  (test-case [[:a] (set-of person-schema)]
+             {:a {:name {:first "Roberto"} :height "76"}}
+             #{"At parent path [:a], constraint failed: '[:or nil? set?]'"})
 
 ;;;; using 'set-of' with an 'Number' predicate - means there is a set of numbers
-       [[:a] (set-of Number)]
-       {:a 1}
-       #{"At parent path [:a], constraint failed: '[:or nil? set?]'"}
+  (test-case [[:a] (set-of Number)]
+             {:a 1}
+             #{"At parent path [:a], constraint failed: '[:or nil? set?]'"})
 
 ;;;; nil is an acceptable value for a 'set-of' schema
-       [[:a] (set-of integer?)]
-       {:a nil}
-       #{}
+  (test-case [[:a] (set-of integer?)]
+             {:a nil}
+             #{})
 
 ;;;; set-of can be used from within other nested simple-schemas -- #{:a} is single item
-       [[:a] [:or Number (set-of Number)]]
-       {:a 4}
-       #{}
+  (test-case [[:a] [:or Number (set-of Number)]]
+             {:a 4}
+             #{})
 
 ;;;; ... <continued from above> -- [:a] is sequential
-       [[:a] [:or Number (set-of Number)]]
-       {:a #{4 5 6 7}}
-       #{}
-
-
-
+  (test-case [[:a] [:or Number (set-of Number)]]
+             {:a #{4 5 6 7}}
+             #{})
 
 
 ;;;; nested loose schemas don't count toward strict schema's keys
-       [[:a] loose-height-schema]
-       {:a {:height 72 :extra-key-doesnt-cuase-error "foo"}
-        :b "oops"}
-       #{"Path [:b] was not specified in the schema."}
+  (test-case [[:a] loose-height-schema]
+             {:a {:height 72 :extra-key-doesnt-cuase-error "foo"}
+              :b "oops"}
+             #{"Path [:b] was not specified in the schema."})
 
 ;;;; can use Classes as a schema
-       [[:a] String]
-       {:a "Roberto"}
-       #{}
+  (test-case [[:a] String]
+             {:a "Roberto"}
+             #{})
 
-       [[:a] String]
-       {:a :Roberto}
-       #{"Expected value :Roberto, at path [:a], to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
+  (test-case [[:a] String]
+             {:a :Roberto}
+             #{"Expected value :Roberto, at path [:a], to be an instance of class java.lang.String, but was clojure.lang.Keyword"})
 
-       ;; instance-of? satisfies the predicate -- Long is an instance of Number
-       [[:a] Number]
-       {:a (long 999)}
-       #{}
+  ;; instance-of? satisfies the predicate -- Long is an instance of Number
+  (test-case [[:a] Number]
+             {:a (long 999)}
+             #{})
 
 ;;;; Wildcard paths
 
-       ;; no problems if all paths match the wildcards in the path
-       [[(wild Keyword) (wild string?) 99] String]
-       {:a      {"b"      {99 "letter b"}}
-        :xavier {"yellow" {99 "zebra"}}}
-       #{}
+  ;; no problems if all paths match the wildcards in the path
+  (test-case [[(wild Keyword) (wild string?) 99] String]
+             {:a      {"b"      {99 "letter b"}}
+              :xavier {"yellow" {99 "zebra"}}}
+             #{})
 
-       ;; validates the value at the given path, like normal
-       [[:a (wild keyword?) (wild string?)] String]
-       {:a {:x {"b" :b "c" "letter c"}}}
-       #{"Expected value :b, at path [:a :x \"b\"], to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
+  ;; validates the value at the given path, like normal
+  (test-case [[:a (wild keyword?) (wild string?)] String]
+             {:a {:x {"b" :b "c" "letter c"}}}
+             #{"Expected value :b, at path [:a :x \"b\"], to be an instance of class java.lang.String, but was clojure.lang.Keyword"})
 
-       ;; if a path exists that doesn't match the wildcard, it is considered an extraneous path
-       [[:a] (map-schema :strict [[(wild Keyword)] String])]
-       {:a {"b" "foo" "c" "bar"}}
-       #{"Path [:a \"c\"] was not specified in the schema."
-         "Path [:a \"b\"] was not specified in the schema."}
+  ;; if a path exists that doesn't match the wildcard, it is considered an extraneous path
+  (test-case [[:a] (map-schema :strict [[(wild Keyword)] String])]
+             {:a {"b" "foo" "c" "bar"}}
+             #{"Path [:a \"c\"] was not specified in the schema."
+               "Path [:a \"b\"] was not specified in the schema."})
 
-       ;; can use Class objects as wildcard part of wildcard path
-       [[:a (wild String)] String]
-       {:a {"b" :b "c" "letter c"}}
-       #{"Expected value :b, at path [:a \"b\"], to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
+  ;; can use Class objects as wildcard part of wildcard path
+  (test-case [[:a (wild String)] String]
+             {:a {"b" :b "c" "letter c"}}
+             #{"Expected value :b, at path [:a \"b\"], to be an instance of class java.lang.String, but was clojure.lang.Keyword"})
 
-       ;; can use 'and statements' in simple-schemas
-       [[:a (wild [String #{"baz" "qux"}])] String]
-       {:a {"baz" :b "c" "letter c"}}
-       #{"Path [:a \"c\"] was not specified in the schema."
-         "Expected value :b, at path [:a \"baz\"], to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
+  ;; can use 'and statements' in simple-schemas
+  (test-case [[:a (wild [String #{"baz" "qux"}])] String]
+             {:a {"baz" :b "c" "letter c"}}
+             #{"Path [:a \"c\"] was not specified in the schema."
+               "Expected value :b, at path [:a \"baz\"], to be an instance of class java.lang.String, but was clojure.lang.Keyword"})
 
-       ;; if no keys of the leaf-map match the wildcard, that is OK
-       [[:a (wild string?)] String]
-       {:a {999 :boom}}
-       #{"Path [:a 999] was not specified in the schema."}
+  ;; if no keys of the leaf-map match the wildcard, that is OK
+  (test-case [[:a (wild string?)] String]
+             {:a {999 :boom}}
+             #{"Path [:a 999] was not specified in the schema."})
 
-       ;; Wildcard paths match empty maps
-       [[:a (wild string?)] String]
-       {:a {}}
-       #{}
+  ;; Wildcard paths match empty maps
+  (test-case [[:a (wild string?)] String]
+             {:a {}}
+             #{})
 
-       ;; don't get missing path errors for nested schemas within wildcard paths - regression test Jun 15, 2012
-       [[:carted (wild String)] product-schema]
-       {:carted {"Sneetch" {:quantity 5 :price 100}}}
-       #{}
+  ;; don't get missing path errors for nested schemas within wildcard paths - regression test Jun 15, 2012
+  (test-case [[:carted (wild String)] product-schema]
+             {:carted {"Sneetch" {:quantity 5 :price 100}}}
+             #{})
 
-       ;; doesn't confuse paths with string keys as wildcard paths - regression test Jun 15, 2012
-       [["Sneetch" :unit-price-cents] String]
-       {"Sneetch" {:unit-price-cents "a"}}
-       #{}
+  ;; doesn't confuse paths with string keys as wildcard paths - regression test Jun 15, 2012
+  (test-case [["Sneetch" :unit-price-cents] String]
+             {"Sneetch" {:unit-price-cents "a"}}
+             #{})
 
-       ;; won't confuse them in nested paths either
-       [["Sneetch" :unit-price-cents] (map-schema :strict [[:a] string?])]
-       {"Sneetch" {:unit-price-cents {:a "a"}}}
-       #{}
+  ;; won't confuse them in nested paths either
+  (test-case [["Sneetch" :unit-price-cents] (map-schema :strict [[:a] string?])]
+             {"Sneetch" {:unit-price-cents {:a "a"}}}
+             #{})
 
-       ;; when top level keys in the map is wildcarded
-       [[(wild (comp keyword #(re-matches #"key\d+" %) name))] String]
-       {:key0 "val0" :key1 "val1" :key2 "val2"}
-       #{}
+  ;; when top level keys in the map is wildcarded
+  (test-case [[(wild (comp keyword #(re-matches #"key\d+" %) name))] String]
+             {:key0 "val0" :key1 "val1" :key2 "val2"}
+             #{})
 
-       ;; when top level keys in the map is wildcarded, but there are top
-       ;; level keys which dont match the wildcard
-       [[(wild (comp keyword #(re-matches #"key\d+" %) name))] String]
-       {:key0 "val0" :key1 "val1" :key2 "val2" :top-level "another"}
-       #{"Path [:top-level] was not specified in the schema."}
+  ;; when top level keys in the map is wildcarded, but there are top
+  ;; level keys which dont match the wildcard
+  (test-case [[(wild (comp keyword #(re-matches #"key\d+" %) name))] String]
+             {:key0 "val0" :key1 "val1" :key2 "val2" :top-level "another"}
+             #{"Path [:top-level] was not specified in the schema."})
 
-       ;; present concrete paths at the same level as the wildcard path,
-       ;; wont be considered as an extraneous path
-       [[:top-level] String
-        [(wild (comp keyword #(re-matches #"key\d+" %) name))] String]
-       {:key0 "val0" :key1 "val1" :key2 "val2" :top-level "another"}
-       #{}
+  ;; present concrete paths at the same level as the wildcard path,
+  ;; wont be considered as an extraneous path
+  (test-case [[:top-level] String
+              [(wild (comp keyword #(re-matches #"key\d+" %) name))] String]
+             {:key0 "val0" :key1 "val1" :key2 "val2" :top-level "another"}
+             #{})
 
-       ;; paths that are longer than the map accepts are handled without throwing exceptions
-       [[:a (wild string?)] String]
-       {:a 1}
-       #{"Path [:a] was not specified in the schema."}
+  ;; paths that are longer than the map accepts are handled without throwing exceptions
+  (test-case [[:a (wild string?)] String]
+             {:a 1}
+             #{"Path [:a] was not specified in the schema."})
 
-       ;; can't have empty maps at wilcard paths, they don't count
-       [[:a :b] (map-schema :strict [[(wild String)] Number])]
-       {:a {}}
-       #{"Map did not contain expected path [:a :b]."}
+  ;; can't have empty maps at wilcard paths, they don't count
+  (test-case [[:a :b] (map-schema :strict [[(wild String)] Number])]
+             {:a {}}
+             #{"Map did not contain expected path [:a :b]."})
 
-       ;; ... <continued>
-       [[:a :b] (map-schema :strict [[:banana-count] Number
-                                [(wild String)] Number])]
-       {:a {}}
-       #{"Map did not contain expected path [:a :b]."}
+  ;; ... <continued>
+  (test-case [[:a :b] (map-schema :strict [[:banana-count] Number
+                                           [(wild String)] Number])]
+             {:a {}}
+             #{"Map did not contain expected path [:a :b]."})
 
 ;;;; optional paths interactions with wild card paths
 
-       ;; no missing path error even when it finds none that match the wildcard
-       [(optional-path [:a (wild string?)]) String]
-       {}
-       #{}
+  ;; no missing path error even when it finds none that match the wildcard
+  (test-case [(optional-path [:a (wild string?)]) String]
+             {}
+             #{})
 
-       ;; no missing path error, even when the value isn't map as was expected
-       [(optional-path [:a (wild string?)]) String]
-       {:a 1}
-       #{"Path [:a] was not specified in the schema."}
+  ;; no missing path error, even when the value isn't map as was expected
+  (test-case [(optional-path [:a (wild string?)]) String]
+             {:a 1}
+             #{"Path [:a] was not specified in the schema."})
 
-       ;; notices extraneous paths that have separately included subpaths
-       ;; in same schema - regression test July 20, 2012
-       [[:name]    String
-        [:data]    map? ;; this guy = 'separately included subpath'
-        [:data :a] String]
-       {:name "Roberto"
-        :data {:a "cool"
-               :b "dude"}}
-       #{"Path [:data :b] was not specified in the schema."}
+  ;; notices extraneous paths that have separately included subpaths
+  ;; in same schema - regression test July 20, 2012
+  (test-case [[:name]    String
+              [:data]    map? ;; this guy = 'separately included subpath'
+              [:data :a] String]
+             {:name "Roberto"
+              :data {:a "cool"
+                     :b "dude"}}
+             #{"Path [:data :b] was not specified in the schema."})
 
 
-       ;; [Issue #1] - Can AND a sequential with a single item schema
-       [[:a] [empty? (sequence-of String)]]
-       {:a []}
-       #{}
+  ;; [Issue #1] - Can AND a sequential with a single item schema
+  (test-case [[:a] [empty? (sequence-of String)]]
+             {:a []}
+             #{})
 
-       ;; [Issue #1] - continued...
-       [[:a] [empty? (sequence-of String)]]
-       {:a ["Roberto"]}
-       #{"Value [\"Roberto\"], at path [:a], did not match predicate 'empty?'."}
-
-       ))
+  ;; [Issue #1] - continued...
+  (test-case [[:a] [empty? (sequence-of String)]]
+             {:a ["Roberto"]}
+             #{"Value [\"Roberto\"], at path [:a], did not match predicate 'empty?'."}))
 
 (deftest test-schemas-can-check-constraints-against-entire-map
   (let [errors (validation-errors schema-with-constraints {:a "string"
                                                            :b 99
                                                            :extra 47})]
     (is (= #{"Constraint failed: '(fn [m] (even? (count (keys m))))'" "Constraint failed: '(comp even? count distinct vals)'"}
-          errors)))
+           errors)))
 
   (is (= #{} (validation-errors schema-with-constraints {:a "string"
                                                          :b 99}))))
 
-       (deftest test-loose-schema-validations
-         (are [schema m errors] (= errors (validation-errors (map-schema :loose schema) m))
+(deftest test-loose-schema-validations
+  (are [schema m errors] (= errors (validation-errors (map-schema :loose schema) m))
 
-           ;; extra paths on wild card paths are ok if the schema is loose
-           [[:a (wild string?)] String]
-           {:a {999 :boom}}
-             #{}
-           ))
+       ;; extra paths on wild card paths are ok if the schema is loose
+       [[:a (wild string?)] String]
+       {:a {999 :boom}}
+       #{}
+       ))
 
-       (deftest test-valid?
-      (testing "valid iff there'd be no error messages"
-        (are [schema m result] (= (valid? (map-schema :strict schema) m) result)
+(deftest test-valid?
+  (testing "valid iff there'd be no error messages"
+    (are [schema m result] (= (valid? (map-schema :strict schema) m) result)
 
-          [[:a] number?]
-          {:a 1}
-          true
+         [[:a] number?]
+         {:a 1}
+         true
 
-          [[:b] number?]
-          {}
-          false)))
-
-     ;; TODO ALex July 30, 2012 -- move into internal ns all about wildcard paths
-     (deftest test-wildcard-path->concrete-paths
-       (are [m wildcard-path concrete-paths] (= (set concrete-paths)
-                                               (set (#'clj-schema.validation/wildcard-path->concrete-paths m
-                                                      wildcard-path)))
-         ;; base cases
+         [[:b] number?]
          {}
-         []
-         [[]]
+         false)))
 
-         {:a 1}
-         [:a]
-         [[:a]]
+;; TODO ALex July 30, 2012 -- move into internal ns all about wildcard paths
+(deftest test-wildcard-path->concrete-paths
+  (are [m wildcard-path concrete-paths] (= (set concrete-paths)
+                                           (set (#'clj-schema.validation/wildcard-path->concrete-paths m
+                                                                                                       wildcard-path)))
+       ;; base cases
+       {}
+       []
+       [[]]
 
-         ;; expands concrete path into itself
-         {:a {:any-keyword {:c {:any-keyword 'SOMETHING}}}}
-         [:a :any-keyword :c :any-keyword]
-         [[:a :any-keyword :c :any-keyword]]
+       {:a 1}
+       [:a]
+       [[:a]]
 
-         ;; shortest wildcard works -- important test don't remove
-         {:a 1}
-         [(wild keyword?)]
-         [[:a]]
+       ;; expands concrete path into itself
+       {:a {:any-keyword {:c {:any-keyword 'SOMETHING}}}}
+       [:a :any-keyword :c :any-keyword]
+       [[:a :any-keyword :c :any-keyword]]
 
-         ;; expands wildcard path into all possible paths based on the supplied map 'm'
-         {:a {:b {:c "foo"}
-              :x {:c "bar"}}}
-         [:a (wild keyword?) :c]
-         [[:a :b :c]
-          [:a :x :c]]
+       ;; shortest wildcard works -- important test don't remove
+       {:a 1}
+       [(wild keyword?)]
+       [[:a]]
 
-         ;; if a map doesn't have enough nesting to satisfy a wildcard path, then
-         ;; there are no concrete paths generated
-         {:a 1}
-         [:a (wild :b)]
-         []
+       ;; expands wildcard path into all possible paths based on the supplied map 'm'
+       {:a {:b {:c "foo"}
+            :x {:c "bar"}}}
+       [:a (wild keyword?) :c]
+       [[:a :b :c]
+        [:a :x :c]]
 
-         ))
+       ;; if a map doesn't have enough nesting to satisfy a wildcard path, then
+       ;; there are no concrete paths generated
+       {:a 1}
+       [:a (wild :b)]
+       []
 
-     ;; same here
+       ))
+
+;; same here
 (deftest test-covered-by-wildcard-path?
   (are [path wildcard-path covered?] (= covered? (#'clj-schema.validation/covered-by-wildcard-path? path wildcard-path))
 
@@ -567,7 +563,7 @@
          (validation-errors [:or String Number] 55)))
   (is (= #{"Expected value :keyword to be an instance of class java.lang.Number, but was clojure.lang.Keyword" "Expected value :keyword to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
          (validation-errors [:or String Number] :keyword)))
-    (is (= #{"Expected value :keyword to be an instance of class java.lang.Number, but was clojure.lang.Keyword" "Expected value :keyword to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
+  (is (= #{"Expected value :keyword to be an instance of class java.lang.Number, but was clojure.lang.Keyword" "Expected value :keyword to be an instance of class java.lang.String, but was clojure.lang.Keyword"}
          (validation-errors [:or Number String] :keyword)))
 
   (is (= #{}
