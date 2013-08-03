@@ -16,8 +16,8 @@
                              [jonase/eastwood "0.0.2"]]}
              :1.3.0 {:dependencies [[org.clojure/clojure "1.3.0"]]}
              :1.4.0 {:dependencies [[org.clojure/clojure "1.4.0"]]}
-             :1.5.0 {:dependencies [[org.clojure/clojure "1.5.0-RC4"]]}}
-  :aliases {"run-tests" ["with-profile" "1.3.0:1.4.0:1.5.0" "test"]
+             :1.5.1 {:dependencies [[org.clojure/clojure "1.5.1"]]}}
+  :aliases {"run-tests" ["with-profile" "1.3.0:1.4.0:1.5.1" "test"]
             "slamhound" ["run" "-m" "slam.hound"]}
   :codox {:src-dir-uri "https://github.com/runa-dev/clj-schema/blob/master"
           :src-linenum-anchor-prefix "L"
