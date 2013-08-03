@@ -8,13 +8,13 @@
 (def-map-schema count-schema [[:count] Number])
 (def-map-schema product-schema [[:quantity] Number
                            [:price]    Number])
-(def-map-schema :loose loose-height-schema
+(def-map-schema loose-height-schema :loose
   [[:height] Number])
 (def-map-schema person-schema
   name-schema
   height-schema)
 
-(def-map-schema :loose loose-person-schema
+(def-map-schema loose-person-schema :loose
   [[:name :first] String
    [:height] Number])
 
@@ -26,7 +26,7 @@
   [[:mom] person-schema
    [:dad] loose-person-schema])
 
-(def-map-schema :loose schema-with-constraints
+(def-map-schema schema-with-constraints :loose
   (constraints (comp even? count distinct vals)
                (fn [m] (even? (count (keys m)))))
   [[:a] String
@@ -46,19 +46,19 @@
 (def black-square (OneOf 0))
 (def white-square (OneOf 1))
 
-(def-seq-schema :layout white-row
+(def-seq-schema white-row :layout
   [white-square black-square white-square black-square white-square black-square white-square black-square])
 
-(def-seq-schema :layout black-row
+(def-seq-schema black-row :layout
   [black-square white-square black-square white-square black-square white-square black-square white-square])
 
-(def-seq-schema :layout checkers-board-schema
+(def-seq-schema checkers-board-schema :layout
   [white-row black-row white-row black-row white-row black-row white-row black-row])
 
 
 ;;; 
 
-(def-map-schema :loose non-empty-map
+(def-map-schema non-empty-map :loose
   (constraints (simple-schema map?)
                (complement empty?)))
 
@@ -67,7 +67,7 @@
   [[:a] (OneOf 1)]
   (constraints (fn [m] (not (sorted? m)))))
 
-(def-seq-schema :all red-list
+(def-seq-schema red-list :all
   (constraints (fn [xs] (even? (count xs))))
   (OneOf :red)
   (constraints list?))

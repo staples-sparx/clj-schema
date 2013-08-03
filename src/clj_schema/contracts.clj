@@ -6,7 +6,7 @@
   (:require [robert.hooke :as hooke]))
 
 
-(def-map-schema :loose ^:private contract-schema
+(def-map-schema ^:private contract-schema :loose
   [[:var] var?
    (optional-path [:sampling-rate]) [:or nil fn? [number? #(>= % 0) #(<= % 100)]]
    (optional-path [:input-schema]) Anything

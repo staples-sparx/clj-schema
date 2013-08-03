@@ -160,8 +160,10 @@ map under-validation to have more keys than are specified in the schema."
    Can be supplied other schemas which it will addd behavior to..
    Accepts constraints that are applied to the whole map."
   [looseness & constraints-and-schema-vectors]
-  (let [user-specified-constraints (mapcat ::constraint-bundle
-                                           (filter constraint-bundle? constraints-and-schema-vectors))
+  (assert (contains? #{:strict :loose} looseness))
+  (let [user-specified-constraints (->> constraints-and-schema-vectors
+                                        (filter constraint-bundle? )
+                                        (mapcat ::constraint-bundle))
         schemas (filter schema? constraints-and-schema-vectors)
         inherited-schema-specs (mapcat :schema-spec schemas)
         inherited-constraints (mapcat :constraints schemas)
@@ -169,12 +171,14 @@ map under-validation to have more keys than are specified in the schema."
         schema-specs (apply concat (filter schema-spec? constraints-and-schema-vectors))
         flattened-schema-specs (vec (concat inherited-schema-specs schema-specs))
         compiled-schema-specs (u/map-nth 2 ensure-schema flattened-schema-specs)]
-    (assert (contains? #{:strict :loose} looseness))
+    
     (assert (even? (count schema-specs)))
     (assert (every? sequential? (schema-path-set {:schema-spec schema-specs})))
     {:type :map
      :schema-spec compiled-schema-specs
-     :constraints (distinct (concat map-constraints inherited-constraints user-specified-constraints))
+     :constraints (distinct (concat map-constraints
+                                    inherited-constraints
+                                    user-specified-constraints))
      :strict (= :strict looseness)}))
 
 (defmacro def-map-schema
@@ -183,9 +187,11 @@ map under-validation to have more keys than are specified in the schema."
   {:arglists '([name & constraints-and-schema-vectors]
                [looseness name & constraints-and-schema-vectors])}
   [& args]
-  (let [[looseness name & constraints-and-schema-vectors] (if (keyword? (first args))
+  (let [[name looseness & constraints-and-schema-vectors] (if (keyword? (second args))
                                                             args
-                                                            (cons :strict args))]
+                                                            (list* (first args)
+                                                                   :strict
+                                                                   (rest args)))]
     `(def ~(vary-meta name assoc ::schema true ::strict (= :strict looseness))
        (map-schema ~looseness ~@constraints-and-schema-vectors))))
 
@@ -197,11 +203,13 @@ map under-validation to have more keys than are specified in the schema."
    a layout to check the sequence against.
    Accepts constraints that are applied to the whole sequence."
   [all-or-layout & constraints-and-schema-specs]
-  (let [user-specified-constraints (mapcat ::constraint-bundle
-                                           (filter constraint-bundle? constraints-and-schema-specs))
+  (assert (contains? #{:all :layout} all-or-layout))
+  (let [user-specified-constraints (->> constraints-and-schema-specs
+                                        (filter constraint-bundle?)
+                                        (mapcat ::constraint-bundle))
         schema (first (remove constraint-bundle? constraints-and-schema-specs))
         seq-layout schema]
-    (assert (contains? #{:all :layout} all-or-layout))
+    
     (if (= :layout all-or-layout)
       {:type :seq-layout
        :schema-spec (vec (map ensure-schema seq-layout))
@@ -217,10 +225,11 @@ map under-validation to have more keys than are specified in the schema."
   {:arglists '([name & constraints-and-schema-specs]
                [all-or-layout name & constraints-and-schema-specs])}
   [& args]
-  (let [[all-or-layout name & constraints-and-schema-specs] (if (keyword? (first args))
+  (let [[name all-or-layout & constraints-and-schema-specs] (if (keyword? (second args))
                                                             args
-                                                            (cons :all args))]
-    (assert (contains? #{:all :layout} all-or-layout))
+                                                            (list* (first args)
+                                                                   :all
+                                                                   (rest args)))]
     `(def ~(vary-meta name assoc ::schema true)
        (seq-schema ~all-or-layout ~@constraints-and-schema-specs))))
 
@@ -229,8 +238,9 @@ map under-validation to have more keys than are specified in the schema."
    the given schema.
    Accepts constraints that are applied to the whole sequence."
   [& constraints-and-schema-specs]
-  (let [user-specified-constraints (mapcat ::constraint-bundle
-                                           (filter constraint-bundle? constraints-and-schema-specs))
+  (let [user-specified-constraints (->> constraints-and-schema-specs
+                                        (filter constraint-bundle?)
+                                        (mapcat ::constraint-bundle)) 
         schema (first (remove constraint-bundle? constraints-and-schema-specs))]
     {:type :set
      :schema-spec (ensure-schema schema)
@@ -358,7 +368,7 @@ map under-validation to have more keys than are specified in the schema."
 ;;;; Scaffolding
 
 (defn scaffold-schema
-  "Makes a simple scaffolding schema from a given map, sequence or set."
+  "Makes a basic/starter schema from a given map, sequence or set."
   [schema-name x]
   (cond (map? x)
         (list 'def-map-schema (symbol schema-name)

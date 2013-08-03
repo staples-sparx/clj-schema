@@ -103,7 +103,7 @@ paths (and constraints) from all included schemas.
    [:baz] #"baz"])
 ```
 
-All schemas are just maps:
+Schemas are just maps:
 
 ```clj
 (def-map-schema foo-schema [[:a] String])
@@ -120,7 +120,10 @@ All schemas are just maps:
 
 `def-map-schema` creates a strict schema by default, which expects only the paths it describes to be present on the given map.
 
-`(def-map-schema :loose my-schema [[:a] String])` creates a loose schema, which expects its paths to be
+`(def-map-schema my-schema :loose 
+   [[:a] String])` 
+
+Creates a loose schema, which expects its paths to be
 present but does not complain about extra paths.
 
 
@@ -131,7 +134,7 @@ You can also add constraints: schemas, or simple schema precursors that apply to
 data structure under validation:
 
 ```clj
-(def-map-schema :loose sorted-unique
+(def-map-schema sorted-unique :loose
   (constraints sorted? (fn [m] (= (count (keys m))
                                   (count (distinct (keys m))))))
   [[:id] String])
@@ -152,13 +155,13 @@ data structure under validation:
 #### An alternate, layout-based checkerboard schema, ensures checkering of 1's and 0's:
 
 ```clj
-(def-seq-schema :layout white-row
+(def-seq-schema white-row :layout
   [0 1 0 1 0 1 0 1])
 
-(def-seq-schema :layout black-row
+(def-seq-schema black-row :layout
   [1 0 1 0 1 0 1 0])
 
-(def-seq-schema :layout checkers-board-schema
+(def-seq-schema checkers-board-schema :layout
   [white-row black-row white-row black-row white-row black-row white-row black-row])
 ```
 
@@ -293,7 +296,7 @@ These should probably be renamed to something less confusing. Any ideas?
          (sort-people-by-height [(person :height 98) (person :height 67) (person :height 89)]))))
 
 ;; example factories can also be defined as multi-arity
-(def-seq-schema :layout point-schema
+(def-seq-schema point-schema :layout
   (constraints (fn [[x y]] 
                  (= (class x) (class y))))
   [Number Number])
