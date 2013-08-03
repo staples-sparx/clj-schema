@@ -261,8 +261,8 @@ map under-validation to have more keys than are specified in the schema."
   set-of set-schema)
 
 (defn after-transform
-  "Wraps a schema. Returns a new schema that is a String that when read matches
-   the wrapped schema.
+  "Wraps a schema. Returns a new schema that first calls the transform-fn on the item, then
+   checks whether it passes the supplied schema.
 
    Ex. (validation-errors (after-transform #'deref (sequence-of Long)) (atom [1 2 3]))
        ;; => #{}"
