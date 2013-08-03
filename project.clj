@@ -1,6 +1,6 @@
-(defproject org.clojars.runa/clj-schema "0.9.4"
+(defproject org.clojars.runa/clj-schema "1.0.0"
   :min-lein-version "2.0.0"
-  :description "Schemas for Clojure data. With validation and example data for tests"
+  :description "Schemas for Clojure data. With validation, example data for tests, and simple contracts support."
   :url "https://github.com/runa-dev/clj-schema"
   :mailing-list {:name "Clj-schema Google Group"
                  :subscribe "https://groups.google.com/forum/?fromgroups#!forum/clj-schema"}
